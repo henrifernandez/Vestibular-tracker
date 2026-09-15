@@ -1,0 +1,85 @@
+// Schema do banco de dados do Monitor de Acertos (vestibular-tracker)
+// Provider: PostgreSQL (recomendado: Neon ou Supabase, camada gratuita)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Uma prova/vestibular (ex: ENEM-USP, Unicamp SISU, Unicamp COMVEST, Fuvest, Provão Paulista)
+model Prova {
+  id          String   @id @default(cuid())
+  slug        String   @unique // "enem-usp", "unicamp-sisu", "unicamp-comvest", "fuvest", "provao"
+  nome        String
+  descricao   String?
+  areas       Area[]
+  simulados   Simulado[]
+  createdAt   DateTime @default(now())
+}
+
+// Uma área/prova objetiva dentro de um vestibular (ex: Matemática, Linguagens, Humanas, Natureza, Redação)
+model Area {
+  id             String       @id @default(cuid())
+  provaId        String
+  prova          Prova        @relation(fields: [provaId], references: [id], onDelete: Cascade)
+  nome           String
+  totalQuestoes  Int          // total de questões dessa área na prova (ex: 45, 72, 90)
+  ordem          Int          @default(0)
+  metas          Meta[]
+  resultados     Resultado[]
+
+  @@unique([provaId, nome])
+}
+
+// Metas de referência para uma área (pré-carregadas do relatório, mas editáveis)
+model Meta {
+  id           String   @id @default(cuid())
+  areaId       String
+  area         Area     @relation(fields: [areaId], references: [id], onDelete: Cascade)
+  label        String   // ex: "Meta saudável", "Meta conservadora", "Meta agressiva"
+  acertosAlvo  Int?      // meta em número de acertos
+  notaAlvo     Float?    // meta em nota estimada (quando aplicável, ex: ENEM)
+  observacao   String?
+  createdAt    DateTime @default(now())
+}
+
+// Um simulado / prova realizada em uma data
+model Simulado {
+  id          String       @id @default(cuid())
+  provaId     String
+  prova       Prova        @relation(fields: [provaId], references: [id], onDelete: Cascade)
+  data        DateTime
+  nome        String?      // ex: "Simulado Poliedro #3"
+  observacao  String?
+  resultados  Resultado[]
+  createdAt   DateTime     @default(now())
+}
+
+// Resultado de uma área dentro de um simulado
+model Resultado {
+  id               String            @id @default(cuid())
+  simuladoId       String
+  simulado         Simulado          @relation(fields: [simuladoId], references: [id], onDelete: Cascade)
+  areaId           String
+  area             Area              @relation(fields: [areaId], references: [id], onDelete: Cascade)
+  acertos          Int
+  totalQuestoes    Int
+  notaEstimada     Float?
+  conteudosErrados ConteudoErrado[]
+  createdAt        DateTime          @default(now())
+
+  @@unique([simuladoId, areaId])
+}
+
+// Conteúdo/assunto específico errado dentro de um resultado (ex: "frações", "funções do 2º grau")
+model ConteudoErrado {
+  id           String    @id @default(cuid())
+  resultadoId  String
+  resultado    Resultado @relation(fields: [resultadoId], references: [id], onDelete: Cascade)
+  conteudo     String
+  createdAt    DateTime  @default(now())
+}

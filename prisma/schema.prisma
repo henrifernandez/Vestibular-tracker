@@ -69,6 +69,8 @@ model Resultado {
   acertos          Int
   totalQuestoes    Int
   notaEstimada     Float?
+  textoRedacao     String?           @db.Text
+  avaliacaoIA      Json?
   conteudosErrados ConteudoErrado[]
   createdAt        DateTime          @default(now())
 
@@ -82,4 +84,18 @@ model ConteudoErrado {
   resultado    Resultado @relation(fields: [resultadoId], references: [id], onDelete: Cascade)
   conteudo     String
   createdAt    DateTime  @default(now())
+}
+
+// Snapshot de uma sincronização do plugin "Vestibular Tracker Sync" do RemNote.
+// Cada sincronização grava uma linha por matéria, então dá pra plotar a evolução
+// de cardsFeitos/cardsCorretos ao longo do tempo, além de sempre ter o último valor.
+model RevisaoFlashcard {
+  id             String    @id @default(cuid())
+  materia        String
+  cardsFeitos    Int
+  cardsCorretos  Int
+  ultimaRevisao  DateTime?
+  syncedAt       DateTime  @default(now())
+
+  @@index([materia, syncedAt])
 }

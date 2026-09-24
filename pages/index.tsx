@@ -5,6 +5,8 @@ type AreaDash = {
   id: string;
   nome: string;
   totalQuestoes: number;
+  ehRedacao?: boolean;
+  ultimaNota?: number | null;
   ultimoAcertos: number | null;
   ultimoTotal: number | null;
   progresso: number | null;
@@ -89,9 +91,13 @@ export default function Dashboard() {
                 <div className="flex justify-between items-center mb-1">
                   <span className="text-sm font-medium">{area.nome}</span>
                   <span className="text-xs text-ink/50">
-                    {area.ultimoAcertos != null
-                      ? `${area.ultimoAcertos}/${area.ultimoTotal}`
-                      : "sem dados"}
+                    {area.ehRedacao
+                      ? area.ultimaNota != null
+                        ? `nota ${area.ultimaNota}/1000`
+                        : "sem dados"
+                      : area.ultimoAcertos != null
+                        ? `${area.ultimoAcertos}/${area.ultimoTotal}`
+                        : "sem dados"}
                   </span>
                 </div>
                 <div className="h-2 rounded-full bg-ink/10 overflow-hidden">

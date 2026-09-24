@@ -1,6 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "@/lib/prisma";
-import { ehRedacao } from "@/lib/redacao";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "GET") {
@@ -29,33 +28,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     descricao: prova.descricao,
     areas: prova.areas.map((area) => {
       const ultimo = area.resultados[area.resultados.length - 1];
-      const redacao = ehRedacao(area.nome);
-
-      // Redação: progresso vem da nota estimada (IA) contra a meta de nota,
-      // não de acertos/totalQuestoes (que pra Redação é um valor fixo sem sentido).
-      if (redacao) {
-        const melhorMetaNota = area.metas.reduce<number | null>((max, m) => {
-          if (m.notaAlvo == null) return max;
-          return max == null ? m.notaAlvo : Math.max(max, m.notaAlvo);
-        }, null);
-
-        return {
-          id: area.id,
-          nome: area.nome,
-          totalQuestoes: area.totalQuestoes,
-          metas: area.metas,
-          ehRedacao: true,
-          ultimaNota: ultimo?.notaEstimada ?? null,
-          ultimoAcertos: null,
-          ultimoTotal: null,
-          progresso:
-            ultimo?.notaEstimada != null && melhorMetaNota
-              ? Math.min(100, Math.round((ultimo.notaEstimada / melhorMetaNota) * 100))
-              : null,
-          qtdSimulados: area.resultados.length,
-        };
-      }
-
       const melhorMetaAcertos = area.metas.reduce<number | null>((max, m) => {
         if (m.acertosAlvo == null) return max;
         return max == null ? m.acertosAlvo : Math.max(max, m.acertosAlvo);
@@ -66,7 +38,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         nome: area.nome,
         totalQuestoes: area.totalQuestoes,
         metas: area.metas,
-        ehRedacao: false,
         ultimoAcertos: ultimo?.acertos ?? null,
         ultimoTotal: ultimo?.totalQuestoes ?? null,
         progresso:

@@ -28,6 +28,19 @@ type ProvaSeed = {
 
 const provas: ProvaSeed[] = [
   {
+    slug: "enem",
+    nome: "ENEM (registro único)",
+    descricao:
+      "Registre aqui os acertos do ENEM uma única vez. O resultado é copiado automaticamente para o ENEM-USP e para o ENEM/SISU (Unicamp), já que é a mesma prova.",
+    areas: [
+      { nome: "Matemática", totalQuestoes: 45, ordem: 1, metas: [] },
+      { nome: "Ciências da Natureza", totalQuestoes: 45, ordem: 2, metas: [] },
+      { nome: "Ciências Humanas", totalQuestoes: 45, ordem: 3, metas: [] },
+      { nome: "Linguagens", totalQuestoes: 45, ordem: 4, metas: [] },
+      { nome: "Redação", totalQuestoes: 1, ordem: 5, metas: [] },
+    ],
+  },
+  {
     slug: "enem-usp",
     nome: "ENEM-USP (IME — Ciência da Computação)",
     descricao:

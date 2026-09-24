@@ -84,6 +84,31 @@ npm run prisma:seed
 
 Pronto — o app está no ar, gratuito, e os dados ficam salvos no Postgres entre sessões.
 
+## Novidades: ENEM unificado e redação por IA
+
+- **Registro único de ENEM**: ao registrar um simulado, escolha a prova "ENEM (registro único)".
+  O que você preencher ali é copiado automaticamente para o ENEM-USP e para o ENEM/SISU
+  (Unicamp), já que as duas usam a mesma prova física — você não precisa mais digitar os
+  mesmos acertos duas vezes.
+- **Redação avaliada por IA**: no campo de Redação do formulário, cole o texto completo e
+  clique em "Avaliar com IA". Isso chama a API do Google Gemini e devolve uma nota estimada
+  (0–1000, em bandas de 40 por competência, igual ao ENEM de verdade) com comentário
+  específico por competência. Para usar essa função, é preciso configurar a variável de
+  ambiente `GEMINI_API_KEY` (tanto no seu `.env` local quanto nas "Environment Variables"
+  do projeto na Vercel) — crie uma chave gratuita, sem cartão de crédito, em
+  https://aistudio.google.com/app/apikey (é um tier realmente gratuito e permanente, só
+  com limite de quantidade de chamadas por dia, mais que suficiente para uso pessoal). Sem
+  a chave configurada, o resto do app funciona normalmente, só o botão "Avaliar com IA"
+  fica indisponível.
+
+Depois de puxar essas mudanças, rode a migration para criar as novas colunas e a prova
+"enem" no banco:
+
+```bash
+npx prisma migrate dev --name enem_unificado_e_redacao_ia
+npx prisma db seed
+```
+
 ## Estrutura do banco (resumo)
 
 - `Prova` → cada vestibular (ENEM-USP, Unicamp SISU, Unicamp COMVEST, Fuvest, Provão)

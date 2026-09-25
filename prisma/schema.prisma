@@ -99,3 +99,21 @@ model RevisaoFlashcard {
 
   @@index([materia, syncedAt])
 }
+
+// Uma linha do cronograma planejado no Notion (databases "biologia", "quimica",
+// "fisica-atual" dentro de "Planejamento para estudantes"), sincronizada pelo n8n.
+// notionUrl identifica a página de origem no Notion, usado pra fazer upsert
+// (evita duplicar a mesma linha a cada sincronização).
+model PlanoEstudo {
+  id           String   @id @default(cuid())
+  notionUrl    String   @unique
+  materia      String
+  data         DateTime
+  diaSemana    String?
+  topicos      String?
+  feito        Boolean  @default(false)
+  observacoes  String?  @db.Text
+  syncedAt     DateTime @default(now())
+
+  @@index([materia, data])
+}

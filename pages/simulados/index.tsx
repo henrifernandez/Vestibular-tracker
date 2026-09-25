@@ -41,7 +41,7 @@ export default function ListaSimulados() {
   return (
     <div className="space-y-6">
       <div className="flex items-baseline justify-between">
-        <h1 className="text-2xl font-semibold">Simulados registrados</h1>
+        <h1 className="font-display text-2xl font-semibold">Simulados registrados</h1>
         <Link href="/simulados/novo" className="text-sm text-accent hover:underline">
           + registrar novo
         </Link>

@@ -66,7 +66,7 @@ export default function ProvaPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">{prova.nome}</h1>
+        <h1 className="font-display text-2xl font-semibold">{prova.nome}</h1>
         {prova.descricao && <p className="text-sm text-ink/60 mt-1">{prova.descricao}</p>}
       </div>
 

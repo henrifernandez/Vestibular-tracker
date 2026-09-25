@@ -38,7 +38,7 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">Painel de evolução</h1>
+        <h1 className="font-display text-2xl font-semibold">Painel de evolução</h1>
         <p className="text-sm text-ink/60 mt-1">
           Escolha uma prova para ver o progresso por área, comparado com as metas da reta final.
         </p>

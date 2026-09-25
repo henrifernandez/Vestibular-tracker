@@ -144,7 +144,7 @@ export default function NovoSimulado() {
 
   return (
     <div className="space-y-6 max-w-2xl">
-      <h1 className="text-2xl font-semibold">Registrar simulado</h1>
+      <h1 className="font-display text-2xl font-semibold">Registrar simulado</h1>
 
       <div className="bg-white rounded-xl border border-ink/10 p-5 space-y-4">
         <div className="grid sm:grid-cols-2 gap-4">

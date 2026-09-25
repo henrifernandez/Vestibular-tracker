@@ -40,7 +40,7 @@ export default function ImportarSimulados() {
   return (
     <div className="max-w-2xl space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">Importar simulados</h1>
+        <h1 className="font-display text-2xl font-semibold">Importar simulados</h1>
         <p className="text-sm text-ink/60 mt-1">
           Envie um arquivo CSV no mesmo formato gerado pela exportação (Prova, Simulado, Data,
           Área, Acertos, Total de questões, % de acertos, Conteúdos errados). Cada grupo de

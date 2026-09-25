@@ -54,7 +54,7 @@ export default function ImportarSimulados() {
           ref={inputRef}
           type="file"
           accept=".csv,text/csv"
-          className="text-sm"
+          className="text-sm text-ink/60 file:mr-3 file:rounded-md file:border-0 file:bg-accent file:px-4 file:py-2 file:text-sm file:font-medium file:text-white file:cursor-pointer hover:file:bg-accent/90"
           onChange={(e) => {
             const arquivo = e.target.files?.[0];
             if (arquivo) lidarComArquivo(arquivo);

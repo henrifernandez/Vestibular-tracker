@@ -439,13 +439,15 @@ export default function Dashboard() {
             let sensorHeader: ReturnType<typeof corSensor> | null = null;
             if (prova.slug === "provao") {
               sensorHeader = corSensor(notaFinalProvao(prova.areas), META_NOTA_FINAL_PROVAO, MARGEM_NOTA_FINAL_10);
-            } else if (areasVisiveis.length === 1) {
-              const area = areasVisiveis[0];
-              const redacao = ehRedacao(area.nome);
-              const valor = redacao ? area.ultimaNota ?? null : area.ultimoAcertos;
-              const meta = redacao ? metaNota(area) : metaAcertos(area);
-              const margem = redacao ? MARGEM_REDACAO_20 : MARGEM_ACERTOS;
-              sensorHeader = valor != null && meta != null ? corSensor(valor, meta, margem) : null;
+            } else {
+              // Agrega acertos e meta de todas as áreas objetivas (soma bate com
+              // a meta original da prova, já que foi rateada por área) — funciona
+              // tanto pra prova de área única quanto pra várias áreas.
+              const naoRedacao = areasVisiveis.filter((a) => !ehRedacao(a.nome));
+              const somaAcertos = naoRedacao.reduce((s, a) => s + (a.ultimoAcertos ?? 0), 0);
+              const somaMeta = naoRedacao.reduce((s, a) => s + (metaAcertos(a) ?? 0), 0);
+              const temDados = naoRedacao.some((a) => a.ultimoAcertos != null);
+              sensorHeader = temDados && somaMeta > 0 ? corSensor(somaAcertos, somaMeta, MARGEM_ACERTOS) : null;
             }
 
             return (

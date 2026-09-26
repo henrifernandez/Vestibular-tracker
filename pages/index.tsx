@@ -1,15 +1,34 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ehRedacao } from "@/lib/redacao";
+import {
+  estimarTRI,
+  corSensor,
+  mediaPonderada,
+  mediaSimples,
+  PESOS_NF_USP,
+  SENSOR_DOT,
+  SENSOR_BAR,
+  SENSOR_TEXT,
+  MARGEM_ACERTOS,
+  MARGEM_TRI,
+  MARGEM_REDACAO_20,
+  MARGEM_NOTA_FINAL_10,
+} from "@/lib/tri";
+
+type MetaDash = { label: string; acertosAlvo: number | null; notaAlvo: number | null; observacao: string | null };
 
 type AreaDash = {
   id: string;
   nome: string;
   totalQuestoes: number;
+  ehRedacao?: boolean;
+  ultimaNota?: number | null;
   ultimoAcertos: number | null;
   ultimoTotal: number | null;
   progresso: number | null;
   qtdSimulados: number;
+  metas: MetaDash[];
 };
 
 type ProvaDash = {
@@ -68,6 +87,41 @@ function ChevronIcon({ aberto }: { aberto: boolean }) {
   );
 }
 
+// Nota final projetada do Provão Paulista Seriado: 1º+2º ano já contam fixo
+// (2,33 pontos), o resto vem do 3º ano (questões + redação), conforme a
+// fórmula do próprio edital (SEDUC) — Nota Final = 1ºano×0,15 + 2ºano×0,25 +
+// 3ºano×0,40 + Redação×0,20.
+const CONTRIBUICAO_FIXA_PROVAO = 2.33;
+const AREAS_3_ANO_PROVAO = ["Linguagens", "Ciências da Natureza", "Matemática", "Ciências Humanas"];
+const META_NOTA_FINAL_PROVAO = 7.3; // meta mais realista (Unicamp CC): 7,2–7,4
+
+function NotaFinalProvao({ areas }: { areas: AreaDash[] }) {
+  const areas3ano = areas.filter((a) => AREAS_3_ANO_PROVAO.includes(a.nome));
+  const acertos3ano = areas3ano.reduce((s, a) => s + (a.ultimoAcertos ?? 0), 0);
+  const total3ano = areas3ano.reduce((s, a) => s + a.totalQuestoes, 0);
+  const nota3ano10 = total3ano > 0 ? (acertos3ano / total3ano) * 10 : 0;
+
+  const redacao = areas.find((a) => ehRedacao(a.nome));
+  const notaRedacao20 = redacao?.ultimaNota ?? 0;
+  const notaRedacao10 = (notaRedacao20 / 20) * 10;
+
+  const notaFinal = CONTRIBUICAO_FIXA_PROVAO + nota3ano10 * 0.4 + notaRedacao10 * 0.2;
+  const sensor = corSensor(notaFinal, META_NOTA_FINAL_PROVAO, MARGEM_NOTA_FINAL_10);
+
+  return (
+    <div className="border border-ink/10 rounded-lg p-3 flex items-center justify-between">
+      <div>
+        <div className="text-sm font-medium">Nota final projetada</div>
+        <div className="text-[11px] text-ink/45 mt-0.5">meta Unicamp CC: 7,2–7,4</div>
+      </div>
+      <span className={"font-mono text-lg flex items-center gap-2 " + SENSOR_TEXT[sensor]}>
+        <span className={"h-2 w-2 rounded-full " + SENSOR_DOT[sensor]} />
+        {notaFinal.toFixed(2)}/10
+      </span>
+    </div>
+  );
+}
+
 // Áreas que representam fases já encerradas (ex: 1º/2º ano do Provão Paulista
 // Seriado) — contam ponto fixo na nota final, mas não devem entrar na média de
 // "progresso ativo", senão uma fase já 100% cumprida infla artificialmente o
@@ -81,6 +135,41 @@ function progressoMedio(prova: ProvaDash): number | null {
     .filter((v): v is number => v != null);
   if (valores.length === 0) return null;
   return Math.round(valores.reduce((s, v) => s + v, 0) / valores.length);
+}
+
+function metaAcertos(area: AreaDash): number | null {
+  const valores = area.metas.map((m) => m.acertosAlvo).filter((v): v is number => v != null);
+  return valores.length ? Math.max(...valores) : null;
+}
+
+function metaNota(area: AreaDash): number | null {
+  const valores = area.metas.map((m) => m.notaAlvo).filter((v): v is number => v != null);
+  return valores.length ? Math.max(...valores) : null;
+}
+
+// TRI estimada de cada área objetiva do ENEM a partir dos acertos, mais a nota
+// real da Redação (correção por IA) — só usado nos destinos do grupo ENEM
+// (USP/UNICAMP), ver lib/tri.ts.
+function valoresTriPorArea(prova: ProvaDash): Record<string, number | null> {
+  const valores: Record<string, number | null> = {};
+  for (const area of prova.areas) {
+    if (ehRedacao(area.nome)) {
+      valores[area.nome] = area.ultimaNota ?? null;
+    } else {
+      valores[area.nome] = area.ultimoAcertos != null ? estimarTRI(area.nome, area.ultimoAcertos) : null;
+    }
+  }
+  return valores;
+}
+
+// USP pondera as áreas (Matemática 3, Linguagens 2, Natureza 2, Redação 2,
+// Humanas 1); UNICAMP-SISU é média simples das 5 — cada uma com sua própria
+// nota de corte.
+const NF_META: Record<string, number> = { "enem-usp": 830, "unicamp-sisu": 750 };
+
+function calcularNF(prova: ProvaDash): number | null {
+  const valores = valoresTriPorArea(prova);
+  return prova.slug === "enem-usp" ? mediaPonderada(valores, PESOS_NF_USP) : mediaSimples(valores);
 }
 
 function formatHora(iso: string) {
@@ -270,10 +359,15 @@ export default function Dashboard() {
                     </div>
                     <div className="flex gap-2">
                       {linha.destinos.map((d) => {
-                        const pct = progressoMedio(d);
+                        const nf = calcularNF(d);
+                        const meta = NF_META[d.slug];
+                        const sensor = nf != null ? corSensor(nf, meta, MARGEM_TRI) : null;
                         return (
-                          <span key={d.id} className="font-mono text-[11px] bg-ink/5 rounded-full px-2.5 py-1">
-                            {d.slug === "unicamp-sisu" ? "UNICAMP" : "USP"} {pct != null ? `${pct}%` : "—"}
+                          <span
+                            key={d.id}
+                            className={"font-mono text-[11px] rounded-full px-2.5 py-1 " + (sensor ? SENSOR_TEXT[sensor] + " bg-ink/5" : "bg-ink/5 text-ink/40")}
+                          >
+                            {d.slug === "unicamp-sisu" ? "UNICAMP" : "USP"} {nf ?? "—"}
                           </span>
                         );
                       })}
@@ -281,25 +375,37 @@ export default function Dashboard() {
                   </button>
                   {aberto && (
                     <div className="px-5 pb-4 pl-[50px] grid gap-3 sm:grid-cols-2">
-                      <p className="text-xs text-ink/55 sm:col-span-2 -mt-1 mb-1 max-w-xl">
-                        Mesma prova física do ENEM — pesos e nota de corte próprios de cada
-                        universidade. Registre o simulado uma vez em{" "}
-                        <strong>&quot;ENEM (registro único)&quot;</strong>: o resultado é copiado
-                        automaticamente para as duas.
-                      </p>
                       {linha.destinos.map((d) => {
-                        const pct = progressoMedio(d);
+                        const valores = valoresTriPorArea(d);
+                        const nf = calcularNF(d);
+                        const meta = NF_META[d.slug];
+                        const sensorNF = nf != null ? corSensor(nf, meta, MARGEM_TRI) : null;
                         return (
                           <div key={d.id} className="border border-ink/10 rounded-lg p-3.5">
-                            <Link href={`/provas/${d.slug}`} className="text-sm font-semibold hover:text-accent">
-                              {d.slug === "unicamp-sisu" ? "UNICAMP (Ciência da Computação)" : "USP (IME — Ciência da Computação)"}
-                            </Link>
-                            <div className="text-[11px] text-ink/50 mt-0.5">{d.descricao}</div>
-                            <div className="flex items-center gap-2 mt-2.5">
-                              <div className="flex-1 h-1.5 rounded-full bg-ink/10 overflow-hidden">
-                                <div className="h-full rounded-full bg-accent" style={{ width: `${pct ?? 0}%` }} />
-                              </div>
-                              <span className="font-mono text-xs text-ink/60">{pct != null ? `${pct}%` : "—"}</span>
+                            <div className="flex items-center justify-between">
+                              <Link href={`/provas/${d.slug}`} className="text-sm font-semibold hover:text-accent">
+                                {d.slug === "unicamp-sisu" ? "UNICAMP (Ciência da Computação)" : "USP (IME — Ciência da Computação)"}
+                              </Link>
+                              <span className={"font-mono text-xs flex items-center gap-1.5 " + (sensorNF ? SENSOR_TEXT[sensorNF] : "text-ink/40")}>
+                                {sensorNF && <span className={"h-1.5 w-1.5 rounded-full " + SENSOR_DOT[sensorNF]} />}
+                                {nf ?? "—"} / {meta}
+                              </span>
+                            </div>
+                            <div className="mt-2.5 space-y-1.5">
+                              {d.areas.map((area) => {
+                                const valor = valores[area.nome];
+                                const meta = metaNota(area) ?? metaAcertos(area);
+                                const sensor = valor != null && meta != null ? corSensor(valor, meta, MARGEM_TRI) : null;
+                                return (
+                                  <div key={area.id} className="flex items-center justify-between text-xs">
+                                    <span className="text-ink/60">{area.nome}</span>
+                                    <span className={"font-mono flex items-center gap-1.5 " + (sensor ? SENSOR_TEXT[sensor] : "text-ink/35")}>
+                                      {sensor && <span className={"h-1.5 w-1.5 rounded-full " + SENSOR_DOT[sensor]} />}
+                                      {valor ?? "—"}
+                                    </span>
+                                  </div>
+                                );
+                              })}
                             </div>
                           </div>
                         );
@@ -312,6 +418,8 @@ export default function Dashboard() {
 
             const prova = linha.prova;
             const pct = progressoMedio(prova);
+            const areasVisiveis = prova.areas.filter((a) => !AREAS_HISTORICAS.has(a.nome));
+            const historico = prova.areas.filter((a) => AREAS_HISTORICAS.has(a.nome));
             return (
               <div key={linha.id} className="bg-white rounded-xl border border-ink/10 overflow-hidden">
                 <button
@@ -321,9 +429,6 @@ export default function Dashboard() {
                   <ChevronIcon aberto={aberto} />
                   <div className="flex-1">
                     <div className="text-[15px] font-medium">{prova.nome}</div>
-                    {prova.descricao && (
-                      <div className="text-xs text-ink/50 mt-0.5">{prova.descricao}</div>
-                    )}
                   </div>
                   <div className="flex items-center gap-2.5">
                     <div className="w-28 h-1.5 rounded-full bg-ink/10 overflow-hidden">
@@ -335,26 +440,47 @@ export default function Dashboard() {
                   </div>
                 </button>
                 {aberto && (
-                  <div className="px-5 pb-4 pl-[50px] grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
-                    {prova.areas.map((area) => (
-                      <div key={area.id} className="border border-ink/10 rounded-lg p-2.5">
-                        <div className="flex justify-between items-center text-sm">
-                          <span className="font-medium">{area.nome}</span>
-                          <span className="text-ink/50 text-xs">
-                            {ehRedacao(area.nome)
-                              ? area.ultimoAcertos != null
-                                ? `nota ${area.ultimoAcertos}`
-                                : "sem dados"
-                              : area.ultimoAcertos != null
-                                ? `${area.ultimoAcertos}/${area.ultimoTotal}`
-                                : "sem dados"}
+                  <div className="px-5 pb-4 pl-[50px] space-y-3">
+                    {prova.slug === "provao" && <NotaFinalProvao areas={prova.areas} />}
+                    <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+                      {areasVisiveis.map((area) => {
+                        const redacao = ehRedacao(area.nome);
+                        const valor = redacao ? area.ultimaNota ?? null : area.ultimoAcertos;
+                        const meta = redacao ? metaNota(area) : metaAcertos(area);
+                        const margem = redacao ? MARGEM_REDACAO_20 : MARGEM_ACERTOS;
+                        const sensor = valor != null && meta != null ? corSensor(valor, meta, margem) : null;
+                        return (
+                          <div key={area.id} className="border border-ink/10 rounded-lg p-2.5">
+                            <div className="flex justify-between items-center text-sm">
+                              <span className="font-medium">{area.nome}</span>
+                              <span className={"text-xs flex items-center gap-1.5 " + (sensor ? SENSOR_TEXT[sensor] : "text-ink/50")}>
+                                {sensor && <span className={"h-1.5 w-1.5 rounded-full " + SENSOR_DOT[sensor]} />}
+                                {valor != null
+                                  ? redacao
+                                    ? `nota ${valor}`
+                                    : `${valor}/${area.ultimoTotal}`
+                                  : "sem dados"}
+                              </span>
+                            </div>
+                            <div className="h-1 rounded-full bg-ink/10 mt-2 overflow-hidden">
+                              <div
+                                className={"h-full rounded-full " + (sensor ? SENSOR_BAR[sensor] : "bg-accent")}
+                                style={{ width: `${area.progresso ?? 0}%` }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {historico.length > 0 && (
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        {historico.map((a) => (
+                          <span key={a.id} title={a.metas[0]?.observacao ?? undefined} className="font-mono text-[11px] text-ink/45 bg-ink/5 rounded-full px-2.5 py-1">
+                            {a.nome}: {a.ultimoAcertos}/{a.ultimoTotal}
                           </span>
-                        </div>
-                        <div className="h-1 rounded-full bg-ink/10 mt-2 overflow-hidden">
-                          <div className="h-full rounded-full bg-accent" style={{ width: `${area.progresso ?? 0}%` }} />
-                        </div>
+                        ))}
                       </div>
-                    ))}
+                    )}
                   </div>
                 )}
               </div>

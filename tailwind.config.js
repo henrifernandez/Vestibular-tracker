@@ -3,6 +3,7 @@ module.exports = {
   content: [
     "./pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./lib/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
     extend: {
@@ -12,6 +13,9 @@ module.exports = {
         accent: "#2B5F58",
         warn: "#A8631C",
         good: "#2F7D4F",
+        risco: "#B3261E",
+        atencao: "#B8860B",
+        brilhante: "#16A34A",
         bio: "#3F7D53",
         qui: "#2E6E8E",
         fis: "#6B4FA0",

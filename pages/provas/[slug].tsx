@@ -11,6 +11,7 @@ import {
   CartesianGrid,
 } from "recharts";
 import { ehRedacao } from "@/lib/redacao";
+import { corSensor, margemParaNota, MARGEM_ACERTOS, SENSOR_DOT } from "@/lib/tri";
 
 type Meta = {
   id: string;
@@ -110,19 +111,27 @@ export default function ProvaPage() {
 
             {/* metas de referência */}
             <div className="flex flex-wrap gap-2 mt-3">
-              {area.metas.map((m) => (
-                <span
-                  key={m.id}
-                  title={m.observacao || ""}
-                  className="text-xs bg-accent/10 text-accent rounded-full px-3 py-1"
-                >
-                  {m.label}
-                  {!redacao && m.acertosAlvo != null
-                    ? ` · ${m.acertosAlvo}/${area.totalQuestoes} acertos`
-                    : ""}
-                  {m.notaAlvo != null ? ` · nota ${m.notaAlvo}` : ""}
-                </span>
-              ))}
+              {area.metas.map((m) => {
+                const ultimo = area.resultados[area.resultados.length - 1];
+                const valor = redacao ? ultimo?.notaEstimada ?? null : ultimo?.acertos ?? null;
+                const meta = redacao ? m.notaAlvo : m.acertosAlvo;
+                const margem = redacao && meta != null ? margemParaNota(meta) : MARGEM_ACERTOS;
+                const sensor = valor != null && meta != null ? corSensor(valor, meta, margem) : null;
+                return (
+                  <span
+                    key={m.id}
+                    title={m.observacao || ""}
+                    className="text-xs bg-accent/10 text-accent rounded-full px-3 py-1 inline-flex items-center gap-1.5"
+                  >
+                    {sensor && <span className={"h-1.5 w-1.5 rounded-full " + SENSOR_DOT[sensor]} />}
+                    {m.label}
+                    {!redacao && m.acertosAlvo != null
+                      ? ` · ${m.acertosAlvo}/${area.totalQuestoes} acertos`
+                      : ""}
+                    {m.notaAlvo != null ? ` · nota ${m.notaAlvo}` : ""}
+                  </span>
+                );
+              })}
             </div>
 
             {estaAberta && (

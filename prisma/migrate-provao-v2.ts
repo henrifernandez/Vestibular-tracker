@@ -88,9 +88,7 @@ const areas: AreaSeed[] = [
     totalQuestoes: 1,
     ordem: 7,
     metas: [
-      { label: "Meta Unicamp CC (mais realista)", notaAlvo: 18, observacao: "Escala 0–20 (Provão Paulista). Não pode zerar; mínimo 20% (4/20) para não ser eliminado." },
-      { label: "Meta EACH-USP SI (secundária)", notaAlvo: 19, observacao: "Escala 0–20 (Provão Paulista)." },
-      { label: "Meta IME-USP (tiro longo)", notaAlvo: 20, observacao: "Mesmo com redação máxima ainda é 'tiro longo' segundo o relatório — considere FUVEST/ENEM-USP como vias principais." },
+      { label: "Meta (mais realista)", notaAlvo: 18, observacao: "Escala 0–20 (Provão Paulista). Não pode zerar; mínimo 20% (4/20) para não ser eliminado." },
     ],
   },
 ];

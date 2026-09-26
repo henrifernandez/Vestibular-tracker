@@ -376,7 +376,6 @@ export default function Dashboard() {
                   {aberto && (
                     <div className="px-5 pb-4 pl-[50px] grid gap-3 sm:grid-cols-2">
                       {linha.destinos.map((d) => {
-                        const valores = valoresTriPorArea(d);
                         const nf = calcularNF(d);
                         const meta = NF_META[d.slug];
                         const sensorNF = nf != null ? corSensor(nf, meta, MARGEM_TRI) : null;
@@ -388,21 +387,31 @@ export default function Dashboard() {
                               </Link>
                               <span className={"font-mono text-xs flex items-center gap-1.5 " + (sensorNF ? SENSOR_TEXT[sensorNF] : "text-ink/40")}>
                                 {sensorNF && <span className={"h-1.5 w-1.5 rounded-full " + SENSOR_DOT[sensorNF]} />}
-                                {nf ?? "—"} / {meta}
+                                TRI média {nf ?? "—"} / {meta}
                               </span>
                             </div>
-                            <div className="mt-2.5 space-y-1.5">
+                            <div className="mt-3 space-y-2.5">
                               {d.areas.map((area) => {
-                                const valor = valores[area.nome];
-                                const meta = metaNota(area) ?? metaAcertos(area);
-                                const sensor = valor != null && meta != null ? corSensor(valor, meta, MARGEM_TRI) : null;
+                                const redacao = ehRedacao(area.nome);
+                                const valor = redacao ? area.ultimaNota ?? null : area.ultimoAcertos;
+                                const meta = redacao ? metaNota(area) : metaAcertos(area);
+                                const margem = redacao ? MARGEM_TRI : MARGEM_ACERTOS;
+                                const sensor = valor != null && meta != null ? corSensor(valor, meta, margem) : null;
                                 return (
-                                  <div key={area.id} className="flex items-center justify-between text-xs">
-                                    <span className="text-ink/60">{area.nome}</span>
-                                    <span className={"font-mono flex items-center gap-1.5 " + (sensor ? SENSOR_TEXT[sensor] : "text-ink/35")}>
-                                      {sensor && <span className={"h-1.5 w-1.5 rounded-full " + SENSOR_DOT[sensor]} />}
-                                      {valor ?? "—"}
-                                    </span>
+                                  <div key={area.id}>
+                                    <div className="flex items-center justify-between text-xs mb-1">
+                                      <span className="text-ink/60">{area.nome}</span>
+                                      <span className={"font-mono flex items-center gap-1.5 " + (sensor ? SENSOR_TEXT[sensor] : "text-ink/35")}>
+                                        {sensor && <span className={"h-1.5 w-1.5 rounded-full " + SENSOR_DOT[sensor]} />}
+                                        {valor != null ? (redacao ? `nota ${valor}` : `${valor}/${area.totalQuestoes}`) : "sem dados"}
+                                      </span>
+                                    </div>
+                                    <div className="h-2 rounded-full bg-ink/10 overflow-hidden">
+                                      <div
+                                        className={"h-full rounded-full " + (sensor ? SENSOR_BAR[sensor] : "bg-accent")}
+                                        style={{ width: `${area.progresso ?? 0}%` }}
+                                      />
+                                    </div>
                                   </div>
                                 );
                               })}

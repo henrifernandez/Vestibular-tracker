@@ -25,7 +25,6 @@ const NAV = [
   { href: "/resumo", label: "Resumo semanal" },
   { href: "/simulados", label: "Simulados" },
   { href: "/simulados/novo", label: "Registrar simulado" },
-  { href: "/simulados/importar", label: "Importar CSV" },
 ];
 
 export default function App({ Component, pageProps }: AppProps) {

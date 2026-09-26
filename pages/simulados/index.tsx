@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 
 type Simulado = {
@@ -9,15 +9,50 @@ type Simulado = {
   resultados: { acertos: number; totalQuestoes: number }[];
 };
 
+type ResultadoImport = { simuladosCriados: number; erros: string[] };
+
 export default function ListaSimulados() {
   const [simulados, setSimulados] = useState<Simulado[] | null>(null);
   const [excluindoId, setExcluindoId] = useState<string | null>(null);
 
-  useEffect(() => {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [importando, setImportando] = useState(false);
+  const [resultadoImport, setResultadoImport] = useState<ResultadoImport | null>(null);
+  const [erroImport, setErroImport] = useState<string | null>(null);
+
+  function carregarSimulados() {
     fetch("/api/simulados")
       .then((r) => r.json())
       .then(setSimulados);
-  }, []);
+  }
+
+  useEffect(carregarSimulados, []);
+
+  async function importarArquivo(arquivo: File) {
+    setErroImport(null);
+    setResultadoImport(null);
+    setImportando(true);
+    try {
+      const texto = await arquivo.text();
+      const res = await fetch("/api/simulados/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ csv: texto }),
+      });
+      const dados = await res.json();
+      if (!res.ok) {
+        setErroImport(dados.error || "Não foi possível importar o arquivo.");
+      } else {
+        setResultadoImport(dados);
+        carregarSimulados();
+      }
+    } catch {
+      setErroImport("Não foi possível ler o arquivo.");
+    } finally {
+      setImportando(false);
+      if (inputRef.current) inputRef.current.value = "";
+    }
+  }
 
   async function excluir(id: string) {
     const confirmar = window.confirm(
@@ -40,12 +75,49 @@ export default function ListaSimulados() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-baseline justify-between">
+      <div className="flex items-baseline justify-between flex-wrap gap-2">
         <h1 className="font-display text-2xl font-semibold">Simulados registrados</h1>
-        <Link href="/simulados/novo" className="text-sm text-accent hover:underline">
-          + registrar novo
-        </Link>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => inputRef.current?.click()}
+            disabled={importando}
+            className="text-sm text-accent hover:underline disabled:opacity-50"
+          >
+            {importando ? "importando..." : "+ importar CSV"}
+          </button>
+          <input
+            ref={inputRef}
+            type="file"
+            accept=".csv,text/csv"
+            className="hidden"
+            onChange={(e) => {
+              const arquivo = e.target.files?.[0];
+              if (arquivo) importarArquivo(arquivo);
+            }}
+          />
+          <Link href="/simulados/novo" className="text-sm text-accent hover:underline">
+            + registrar novo
+          </Link>
+        </div>
       </div>
+
+      {erroImport && <p className="text-sm text-warn">{erroImport}</p>}
+
+      {resultadoImport && (
+        <div className="bg-accent/5 rounded-lg p-3 text-sm space-y-1.5">
+          <p>
+            <span className="font-medium text-accent">{resultadoImport.simuladosCriados}</span>{" "}
+            simulado(s) importado(s) com sucesso.
+          </p>
+          {resultadoImport.erros.length > 0 && (
+            <ul className="text-xs text-ink/60 list-disc pl-5 space-y-0.5">
+              {resultadoImport.erros.map((e, i) => (
+                <li key={i}>{e}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
 
       {simulados.length === 0 && (
         <p className="text-sm text-ink/50">Nenhum simulado registrado ainda.</p>

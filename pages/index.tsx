@@ -95,7 +95,7 @@ const CONTRIBUICAO_FIXA_PROVAO = 2.33;
 const AREAS_3_ANO_PROVAO = ["Linguagens", "Ciências da Natureza", "Matemática", "Ciências Humanas"];
 const META_NOTA_FINAL_PROVAO = 7.3; // meta mais realista (Unicamp CC): 7,2–7,4
 
-function NotaFinalProvao({ areas }: { areas: AreaDash[] }) {
+function notaFinalProvao(areas: AreaDash[]): number {
   const areas3ano = areas.filter((a) => AREAS_3_ANO_PROVAO.includes(a.nome));
   const acertos3ano = areas3ano.reduce((s, a) => s + (a.ultimoAcertos ?? 0), 0);
   const total3ano = areas3ano.reduce((s, a) => s + a.totalQuestoes, 0);
@@ -105,7 +105,11 @@ function NotaFinalProvao({ areas }: { areas: AreaDash[] }) {
   const notaRedacao20 = redacao?.ultimaNota ?? 0;
   const notaRedacao10 = (notaRedacao20 / 20) * 10;
 
-  const notaFinal = CONTRIBUICAO_FIXA_PROVAO + nota3ano10 * 0.4 + notaRedacao10 * 0.2;
+  return CONTRIBUICAO_FIXA_PROVAO + nota3ano10 * 0.4 + notaRedacao10 * 0.2;
+}
+
+function NotaFinalProvao({ areas }: { areas: AreaDash[] }) {
+  const notaFinal = notaFinalProvao(areas);
   const sensor = corSensor(notaFinal, META_NOTA_FINAL_PROVAO, MARGEM_NOTA_FINAL_10);
 
   return (
@@ -429,6 +433,21 @@ export default function Dashboard() {
             const pct = progressoMedio(prova);
             const areasVisiveis = prova.areas.filter((a) => !AREAS_HISTORICAS.has(a.nome));
             const historico = prova.areas.filter((a) => AREAS_HISTORICAS.has(a.nome));
+
+            // Sensor do cabeçalho: Provão usa a nota final projetada; provas de
+            // área única (Fuvest, Comvest) usam a própria área contra sua meta.
+            let sensorHeader: ReturnType<typeof corSensor> | null = null;
+            if (prova.slug === "provao") {
+              sensorHeader = corSensor(notaFinalProvao(prova.areas), META_NOTA_FINAL_PROVAO, MARGEM_NOTA_FINAL_10);
+            } else if (areasVisiveis.length === 1) {
+              const area = areasVisiveis[0];
+              const redacao = ehRedacao(area.nome);
+              const valor = redacao ? area.ultimaNota ?? null : area.ultimoAcertos;
+              const meta = redacao ? metaNota(area) : metaAcertos(area);
+              const margem = redacao ? MARGEM_REDACAO_20 : MARGEM_ACERTOS;
+              sensorHeader = valor != null && meta != null ? corSensor(valor, meta, margem) : null;
+            }
+
             return (
               <div key={linha.id} className="bg-white rounded-xl border border-ink/10 overflow-hidden">
                 <button
@@ -440,10 +459,13 @@ export default function Dashboard() {
                     <div className="text-[15px] font-medium">{prova.nome}</div>
                   </div>
                   <div className="flex items-center gap-2.5">
-                    <div className="w-28 h-1.5 rounded-full bg-ink/10 overflow-hidden">
-                      <div className="h-full rounded-full bg-accent" style={{ width: `${pct ?? 0}%` }} />
+                    <div className="w-28 h-2 rounded-full bg-ink/10 overflow-hidden">
+                      <div
+                        className={"h-full rounded-full " + (sensorHeader ? SENSOR_BAR[sensorHeader] : "bg-accent")}
+                        style={{ width: `${pct ?? 0}%` }}
+                      />
                     </div>
-                    <span className="font-mono text-xs w-9 text-right text-ink/60">
+                    <span className={"font-mono text-xs w-9 text-right " + (sensorHeader ? SENSOR_TEXT[sensorHeader] : "text-ink/60")}>
                       {pct != null ? `${pct}%` : "—"}
                     </span>
                   </div>
@@ -471,7 +493,7 @@ export default function Dashboard() {
                                   : "sem dados"}
                               </span>
                             </div>
-                            <div className="h-1 rounded-full bg-ink/10 mt-2 overflow-hidden">
+                            <div className="h-2 rounded-full bg-ink/10 mt-2 overflow-hidden">
                               <div
                                 className={"h-full rounded-full " + (sensor ? SENSOR_BAR[sensor] : "bg-accent")}
                                 style={{ width: `${area.progresso ?? 0}%` }}

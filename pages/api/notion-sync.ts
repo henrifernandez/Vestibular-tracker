@@ -21,7 +21,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // O n8n roda em outro host/origem (container Docker), então precisa liberar CORS aqui,
   // igual ao remnote-sync.
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
   if (req.method === "OPTIONS") {
@@ -82,6 +82,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(201).json({ sincronizados: resultados.length });
   }
 
-  res.setHeader("Allow", ["GET", "POST"]);
+  if (req.method === "DELETE") {
+    // Remove uma linha por id, usado pra limpar entradas de teste/diagnostico.
+    const { id } = req.body as { id?: string };
+    if (!id) {
+      return res.status(400).json({ error: "id é obrigatório" });
+    }
+    await prisma.planoEstudo.delete({ where: { id } }).catch(() => null);
+    return res.status(204).end();
+  }
+
+  res.setHeader("Allow", ["GET", "POST", "DELETE"]);
   res.status(405).end();
 }

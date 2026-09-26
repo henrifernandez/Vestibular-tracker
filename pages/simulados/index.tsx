@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import RegistrarSimuladoForm from "@/components/RegistrarSimuladoForm";
 
 type Simulado = {
   id: string;
@@ -19,6 +20,8 @@ export default function ListaSimulados() {
   const [importando, setImportando] = useState(false);
   const [resultadoImport, setResultadoImport] = useState<ResultadoImport | null>(null);
   const [erroImport, setErroImport] = useState<string | null>(null);
+
+  const [mostrarFormulario, setMostrarFormulario] = useState(false);
 
   function carregarSimulados() {
     fetch("/api/simulados")
@@ -95,11 +98,23 @@ export default function ListaSimulados() {
               if (arquivo) importarArquivo(arquivo);
             }}
           />
-          <Link href="/simulados/novo" className="text-sm text-accent hover:underline">
-            + registrar novo
-          </Link>
+          <button
+            onClick={() => setMostrarFormulario((v) => !v)}
+            className="text-sm text-accent hover:underline"
+          >
+            {mostrarFormulario ? "cancelar" : "+ registrar novo"}
+          </button>
         </div>
       </div>
+
+      {mostrarFormulario && (
+        <RegistrarSimuladoForm
+          onSalvo={() => {
+            setMostrarFormulario(false);
+            carregarSimulados();
+          }}
+        />
+      )}
 
       {erroImport && <p className="text-sm text-warn">{erroImport}</p>}
 

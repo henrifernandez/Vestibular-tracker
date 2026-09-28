@@ -23,6 +23,41 @@ export default function ListaSimulados() {
 
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
 
+  const [ocupadoFicticio, setOcupadoFicticio] = useState(false);
+  const [msgFicticio, setMsgFicticio] = useState<string | null>(null);
+
+  async function acaoFicticios(acao: "carregar" | "limpar") {
+    if (
+      acao === "limpar" &&
+      !window.confirm("Apagar todos os simulados marcados como [dados fictícios]?")
+    )
+      return;
+    setOcupadoFicticio(true);
+    setMsgFicticio(null);
+    try {
+      const res = await fetch("/api/seed-ficticio", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ acao }),
+      });
+      const d = await res.json();
+      if (!res.ok) {
+        setMsgFicticio(`Erro: ${d.error || res.status}`);
+      } else if (acao === "limpar") {
+        setMsgFicticio(`${d.apagados} simulado(s) fictício(s) apagado(s).`);
+      } else {
+        const total = Object.values(d.criados as Record<string, number>).reduce((a, b) => a + b, 0);
+        const avisos = (d.avisos as string[]).length ? ` Avisos: ${(d.avisos as string[]).join(" ")}` : "";
+        setMsgFicticio(`${total} simulado(s) fictício(s) criado(s).${avisos}`);
+      }
+      carregarSimulados();
+    } catch {
+      setMsgFicticio("Erro de rede ao chamar o servidor.");
+    } finally {
+      setOcupadoFicticio(false);
+    }
+  }
+
   function carregarSimulados() {
     fetch("/api/simulados")
       .then((r) => r.json())
@@ -99,6 +134,20 @@ export default function ListaSimulados() {
             }}
           />
           <button
+            onClick={() => acaoFicticios("carregar")}
+            disabled={ocupadoFicticio}
+            className="text-sm text-accent hover:underline disabled:opacity-50"
+          >
+            {ocupadoFicticio ? "aguarde..." : "+ dados fictícios"}
+          </button>
+          <button
+            onClick={() => acaoFicticios("limpar")}
+            disabled={ocupadoFicticio}
+            className="text-sm text-ink/50 hover:underline disabled:opacity-50"
+          >
+            limpar fictícios
+          </button>
+          <button
             onClick={() => setMostrarFormulario((v) => !v)}
             className="text-sm text-accent hover:underline"
           >
@@ -115,6 +164,8 @@ export default function ListaSimulados() {
           }}
         />
       )}
+
+      {msgFicticio && <p className="text-sm text-ink/70">{msgFicticio}</p>}
 
       {erroImport && <p className="text-sm text-warn">{erroImport}</p>}
 

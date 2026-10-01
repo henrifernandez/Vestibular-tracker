@@ -286,14 +286,14 @@ export default function Dashboard() {
         </div>
         <div className="flex gap-2">
           <span className="inline-flex items-center gap-1.5 bg-surface border border-ink/10 rounded-full pl-2.5 pr-3 py-1.5 text-xs">
-            <span className={"h-1.5 w-1.5 rounded-full " + (ultimaSyncNotion ? "bg-good" : "bg-warn")} />
+            <span className={"h-1.5 w-1.5 rounded-full " + (ultimaSyncNotion ? "bg-good" : "bg-brand")} />
             <span className="font-medium">Notion</span>
             <span className="font-mono text-ink/50">
               {ultimaSyncNotion ? `sync ${formatHora(ultimaSyncNotion)}` : "nunca"}
             </span>
           </span>
           <span className="inline-flex items-center gap-1.5 bg-surface border border-ink/10 rounded-full pl-2.5 pr-3 py-1.5 text-xs">
-            <span className={"h-1.5 w-1.5 rounded-full " + (ultimaSyncRemnote ? "bg-good" : "bg-warn")} />
+            <span className={"h-1.5 w-1.5 rounded-full " + (ultimaSyncRemnote ? "bg-good" : "bg-brand")} />
             <span className="font-medium">RemNote</span>
             <span className="font-mono text-ink/50">
               {ultimaSyncRemnote ? `sync ${formatHora(ultimaSyncRemnote)}` : "aguardando reconexão"}
@@ -318,10 +318,10 @@ export default function Dashboard() {
         </div>
         <div className="bg-surface rounded-xl border border-ink/10 p-4">
           <div className="font-mono text-[11px] uppercase tracking-wide text-ink/45">Cards revisados (7d)</div>
-          <div className={"font-display text-2xl font-semibold mt-1 " + (remnote.length ? "" : "text-warn")}>
+          <div className={"font-display text-2xl font-semibold mt-1 " + (remnote.length ? "" : "text-brand")}>
             {remnote.length ? cardsRevisadosSemana : "—"}
           </div>
-          <div className={"text-xs mt-1 " + (remnote.length ? "text-ink/50" : "text-warn")}>
+          <div className={"text-xs mt-1 " + (remnote.length ? "text-ink/50" : "text-brand")}>
             {remnote.length ? "últimos 7 dias" : "RemNote ainda não sincronizado"}
           </div>
         </div>
@@ -556,13 +556,13 @@ export default function Dashboard() {
       {/* RemNote status */}
       <div className="bg-surface rounded-xl border border-ink/10 p-4">
         <div className="flex items-center gap-2 mb-3.5 flex-wrap">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={ultimaSyncRemnote ? "text-good" : "text-warn"}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={ultimaSyncRemnote ? "text-good" : "text-brand"}>
             <path d="M23 4v6h-6"></path>
             <path d="M1 20v-6h6"></path>
             <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
           </svg>
           <h2 className="font-display font-semibold text-base">Flashcards (RemNote)</h2>
-          <span className={"text-xs " + (ultimaSyncRemnote ? "text-ink/50" : "text-warn")}>
+          <span className={"text-xs " + (ultimaSyncRemnote ? "text-ink/50" : "text-brand")}>
             {ultimaSyncRemnote
               ? `última sincronização: hoje às ${formatHora(ultimaSyncRemnote)}`
               : "última sincronização: nunca — plugin aguardando reconexão"}

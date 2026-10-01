@@ -285,14 +285,14 @@ export default function Dashboard() {
           </p>
         </div>
         <div className="flex gap-2">
-          <span className="inline-flex items-center gap-1.5 bg-white border border-ink/10 rounded-full pl-2.5 pr-3 py-1.5 text-xs">
+          <span className="inline-flex items-center gap-1.5 bg-surface border border-ink/10 rounded-full pl-2.5 pr-3 py-1.5 text-xs">
             <span className={"h-1.5 w-1.5 rounded-full " + (ultimaSyncNotion ? "bg-good" : "bg-warn")} />
             <span className="font-medium">Notion</span>
             <span className="font-mono text-ink/50">
               {ultimaSyncNotion ? `sync ${formatHora(ultimaSyncNotion)}` : "nunca"}
             </span>
           </span>
-          <span className="inline-flex items-center gap-1.5 bg-white border border-ink/10 rounded-full pl-2.5 pr-3 py-1.5 text-xs">
+          <span className="inline-flex items-center gap-1.5 bg-surface border border-ink/10 rounded-full pl-2.5 pr-3 py-1.5 text-xs">
             <span className={"h-1.5 w-1.5 rounded-full " + (ultimaSyncRemnote ? "bg-good" : "bg-warn")} />
             <span className="font-medium">RemNote</span>
             <span className="font-mono text-ink/50">
@@ -304,19 +304,19 @@ export default function Dashboard() {
 
       {/* KPIs */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="bg-white rounded-xl border border-ink/10 p-4">
+        <div className="bg-surface rounded-xl border border-ink/10 p-4">
           <div className="font-mono text-[11px] uppercase tracking-wide text-ink/45">Progresso geral</div>
           <div className="font-display text-2xl font-semibold mt-1">
             {progressoGeral != null ? `${progressoGeral}%` : "—"}
           </div>
           <div className="text-xs text-ink/50 mt-1">média entre {provas.length} provas ativas</div>
         </div>
-        <div className="bg-white rounded-xl border border-ink/10 p-4">
+        <div className="bg-surface rounded-xl border border-ink/10 p-4">
           <div className="font-mono text-[11px] uppercase tracking-wide text-ink/45">Simulados registrados</div>
           <div className="font-display text-2xl font-semibold mt-1">{simulados.length}</div>
           <div className="text-xs text-ink/50 mt-1">no total</div>
         </div>
-        <div className="bg-white rounded-xl border border-ink/10 p-4">
+        <div className="bg-surface rounded-xl border border-ink/10 p-4">
           <div className="font-mono text-[11px] uppercase tracking-wide text-ink/45">Cards revisados (7d)</div>
           <div className={"font-display text-2xl font-semibold mt-1 " + (remnote.length ? "" : "text-warn")}>
             {remnote.length ? cardsRevisadosSemana : "—"}
@@ -325,7 +325,7 @@ export default function Dashboard() {
             {remnote.length ? "últimos 7 dias" : "RemNote ainda não sincronizado"}
           </div>
         </div>
-        <div className="bg-white rounded-xl border border-ink/10 p-4">
+        <div className="bg-surface rounded-xl border border-ink/10 p-4">
           <div className="font-mono text-[11px] uppercase tracking-wide text-ink/45">Cronograma cumprido</div>
           <div className="font-display text-2xl font-semibold mt-1">
             {plano.length ? `${cronogramaFeito}/${plano.length}` : "—"}
@@ -349,7 +349,7 @@ export default function Dashboard() {
 
             if (linha.tipo === "grupo") {
               return (
-                <div key={linha.id} className="bg-white rounded-xl border border-ink/10 overflow-hidden">
+                <div key={linha.id} className="bg-surface rounded-xl border border-ink/10 overflow-hidden">
                   <button
                     onClick={() => setAbertoId(aberto ? null : linha.id)}
                     className="flex items-center gap-3.5 px-5 py-3.5 w-full text-left hover:bg-paper/60 transition"
@@ -357,7 +357,7 @@ export default function Dashboard() {
                     <ChevronIcon aberto={aberto} />
                     <div className="flex-1 flex items-center gap-2">
                       <span className="text-[15px] font-medium">{linha.nome}</span>
-                      <span className="font-mono text-[10px] uppercase tracking-wide bg-accent/10 text-accent rounded-full px-2 py-0.5">
+                      <span className="font-mono text-[10px] uppercase tracking-wide bg-accent/10 text-brand rounded-full px-2 py-0.5">
                         2 metas
                       </span>
                     </div>
@@ -386,7 +386,7 @@ export default function Dashboard() {
                         return (
                           <div key={d.id} className="border border-ink/10 rounded-lg p-3.5">
                             <div className="flex items-center justify-between">
-                              <Link href={`/provas/${d.slug}`} className="text-sm font-semibold hover:text-accent">
+                              <Link href={`/provas/${d.slug}`} className="text-sm font-semibold hover:text-brand">
                                 {d.slug === "unicamp-sisu" ? "UNICAMP (Ciência da Computação)" : "USP (IME — Ciência da Computação)"}
                               </Link>
                               <span className={"font-mono text-xs flex items-center gap-1.5 " + (sensorNF ? SENSOR_TEXT[sensorNF] : "text-ink/40")}>
@@ -451,7 +451,7 @@ export default function Dashboard() {
             }
 
             return (
-              <div key={linha.id} className="bg-white rounded-xl border border-ink/10 overflow-hidden">
+              <div key={linha.id} className="bg-surface rounded-xl border border-ink/10 overflow-hidden">
                 <button
                   onClick={() => setAbertoId(aberto ? null : linha.id)}
                   className="flex items-center gap-3.5 px-5 py-3.5 w-full text-left hover:bg-paper/60 transition"
@@ -525,7 +525,7 @@ export default function Dashboard() {
       {/* Simulados recentes */}
       <div>
         <h2 className="font-display text-lg font-semibold mb-3">Simulados recentes</h2>
-        <div className="bg-white rounded-xl border border-ink/10 overflow-hidden">
+        <div className="bg-surface rounded-xl border border-ink/10 overflow-hidden">
           {simuladosRecentes.length === 0 && (
             <p className="text-sm text-ink/50 px-5 py-4">Nenhum simulado registrado ainda.</p>
           )}
@@ -554,7 +554,7 @@ export default function Dashboard() {
       </div>
 
       {/* RemNote status */}
-      <div className="bg-white rounded-xl border border-ink/10 p-4">
+      <div className="bg-surface rounded-xl border border-ink/10 p-4">
         <div className="flex items-center gap-2 mb-3.5 flex-wrap">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={ultimaSyncRemnote ? "text-good" : "text-warn"}>
             <path d="M23 4v6h-6"></path>
@@ -580,7 +580,7 @@ export default function Dashboard() {
                   (dados ? "border border-ink/10" : "border border-dashed border-ink/20")
                 }
               >
-                <div className={"w-8 h-8 rounded-lg text-white flex items-center justify-center font-mono text-[11px] font-semibold flex-shrink-0 " + estilo.bg}>
+                <div className={"w-8 h-8 rounded-lg text-paper flex items-center justify-center font-mono text-[11px] font-semibold flex-shrink-0 " + estilo.bg}>
                   {estilo.sigla}
                 </div>
                 <div>

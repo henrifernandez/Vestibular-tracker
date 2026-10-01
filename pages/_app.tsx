@@ -24,7 +24,7 @@ const NAV = [
   { href: "/", label: "Dashboard" },
   { href: "/resumo", label: "Resumo semanal" },
   { href: "/simulados", label: "Simulados" },
-  { href: "/rota", label: "Rota" },
+  { href: "/calendario", label: "Calendário" },
 ];
 
 export default function App({ Component, pageProps }: AppProps) {
@@ -32,7 +32,7 @@ export default function App({ Component, pageProps }: AppProps) {
 
   return (
     <div className={`min-h-screen font-sans ${display.variable} ${body.variable} ${mono.variable}`}>
-      <header className="border-b border-ink/10 bg-white">
+      <header className="border-b border-ink/10 bg-surface">
         <div className="mx-auto max-w-5xl px-4 py-4 flex items-center justify-between flex-wrap gap-3">
           <Link href="/" className="font-display font-semibold text-xl tracking-tight text-ink">
             Monitor de Acertos
@@ -48,7 +48,7 @@ export default function App({ Component, pageProps }: AppProps) {
                     "px-3 py-1.5 rounded-full transition " +
                     (ativo
                       ? "bg-accent text-white"
-                      : "text-ink/60 hover:text-accent hover:bg-accent/5")
+                      : "text-ink/60 hover:text-brand hover:bg-accent/5")
                   }
                 >
                   {item.label}

@@ -2,12 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  color-scheme: dark;
+}
+
 body {
-  background-color: #F2F3EE;
-  color: #1C2321;
+  background-color: #0D1211;
+  color: #E8EEEB;
   font-variant-numeric: tabular-nums;
 }
 
 ::selection {
-  background-color: #2B5F5833;
+  background-color: #6CC4B655;
 }

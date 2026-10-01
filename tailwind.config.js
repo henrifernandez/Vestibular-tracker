@@ -8,17 +8,20 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        ink: "#1C2321",
-        paper: "#F2F3EE",
-        accent: "#2B5F58",
-        warn: "#A8631C",
-        good: "#2F7D4F",
-        risco: "#B3261E",
-        atencao: "#B8860B",
-        brilhante: "#16A34A",
-        bio: "#3F7D53",
-        qui: "#2E6E8E",
-        fis: "#6B4FA0",
+        // Tema escuro: "ink" agora e o tom claro do texto e "paper" o fundo.
+        ink: "#E8EEEB",
+        paper: "#0D1211",
+        surface: "#151C1A",
+        accent: "#2F7F73",
+        brand: "#6CC4B6",
+        warn: "#D0822F",
+        good: "#3FA46C",
+        risco: "#E0554B",
+        atencao: "#D3A22A",
+        brilhante: "#34D27B",
+        bio: "#4A9466",
+        qui: "#3D86AD",
+        fis: "#8A6FD0",
       },
       fontFamily: {
         display: ["var(--font-display)", "Georgia", "serif"],

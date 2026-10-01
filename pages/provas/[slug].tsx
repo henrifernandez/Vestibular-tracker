@@ -97,7 +97,7 @@ export default function ProvaPage() {
             : `média de ${area.percentualMedio.toFixed(0)}% de acertos`;
 
         return (
-          <section key={area.id} className="bg-white rounded-xl border border-ink/10 p-5">
+          <section key={area.id} className="bg-surface rounded-xl border border-ink/10 p-5">
             <button
               className="w-full flex items-center justify-between text-left"
               onClick={() => setAberta(estaAberta ? null : area.id)}
@@ -121,7 +121,7 @@ export default function ProvaPage() {
                   <span
                     key={m.id}
                     title={m.observacao || ""}
-                    className="text-xs bg-accent/10 text-accent rounded-full px-3 py-1 inline-flex items-center gap-1.5"
+                    className="text-xs bg-accent/10 text-brand rounded-full px-3 py-1 inline-flex items-center gap-1.5"
                   >
                     {sensor && <span className={"h-1.5 w-1.5 rounded-full " + SENSOR_DOT[sensor]} />}
                     {m.label}
@@ -140,22 +140,22 @@ export default function ProvaPage() {
                   <div className="h-56">
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={chartData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#16161610" />
-                        <XAxis dataKey="data" tick={{ fontSize: 11 }} />
-                        <YAxis tick={{ fontSize: 11 }} domain={[0, domainMax]} width={30} />
-                        <Tooltip />
+                        <CartesianGrid strokeDasharray="3 3" stroke="#E8EEEB1F" />
+                        <XAxis dataKey="data" tick={{ fontSize: 11, fill: "#9AA7A2" }} stroke="#E8EEEB33" />
+                        <YAxis tick={{ fontSize: 11, fill: "#9AA7A2" }} stroke="#E8EEEB33" domain={[0, domainMax]} width={30} />
+                        <Tooltip contentStyle={{ background: "#151C1A", border: "1px solid #E8EEEB26", borderRadius: 8, color: "#E8EEEB" }} labelStyle={{ color: "#E8EEEB" }} itemStyle={{ color: "#E8EEEB" }} />
                         {metaLinha != null && (
                           <ReferenceLine
                             y={metaLinha}
-                            stroke="#b1502e"
+                            stroke="#E0714A"
                             strokeDasharray="4 4"
-                            label={{ value: "meta", fontSize: 10, fill: "#b1502e" }}
+                            label={{ value: "meta", fontSize: 10, fill: "#E0714A" }}
                           />
                         )}
                         <Line
                           type="monotone"
                           dataKey="valor"
-                          stroke="#2f6f4f"
+                          stroke="#4CC084"
                           strokeWidth={2}
                           dot={{ r: 3 }}
                         />

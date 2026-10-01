@@ -140,7 +140,7 @@ export default function RegistrarSimuladoForm({ onSalvo }: { onSalvo: () => void
   if (!provas) return <p className="text-sm text-ink/60">Carregando...</p>;
 
   return (
-    <div className="bg-white rounded-xl border border-ink/10 p-5 space-y-4">
+    <div className="bg-surface rounded-xl border border-ink/10 p-5 space-y-4">
       <div className="grid sm:grid-cols-2 gap-4">
         <label className="text-sm">
           Prova
@@ -156,7 +156,7 @@ export default function RegistrarSimuladoForm({ onSalvo }: { onSalvo: () => void
             ))}
           </select>
           {provaAtual?.slug === "enem" && (
-            <span className="block text-xs text-accent mt-1">
+            <span className="block text-xs text-brand mt-1">
               Esse resultado é copiado automaticamente para o ENEM-USP e o ENEM/SISU.
             </span>
           )}
@@ -204,7 +204,7 @@ export default function RegistrarSimuladoForm({ onSalvo }: { onSalvo: () => void
                   type="button"
                   onClick={() => avaliarRedacaoComIA(area.id)}
                   disabled={linha?.avaliando}
-                  className="text-sm border border-accent text-accent rounded-md px-3 py-1.5 hover:bg-accent/10 disabled:opacity-50"
+                  className="text-sm border border-accent text-brand rounded-md px-3 py-1.5 hover:bg-accent/10 disabled:opacity-50"
                 >
                   {linha?.avaliando ? "Avaliando, isso pode levar até 1 min..." : "Avaliar com IA"}
                 </button>

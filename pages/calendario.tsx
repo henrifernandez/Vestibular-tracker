@@ -6,7 +6,7 @@ import {
   SEMANAS,
   type Categoria,
   type EventoRota,
-} from "@/lib/rota-eventos";
+} from "@/lib/calendario-eventos";
 
 type SimuladoApi = {
   id: string;
@@ -17,14 +17,14 @@ type SimuladoApi = {
 };
 
 const MATERIAS: { cat: Categoria; label: string; cor: string }[] = [
-  { cat: "fis", label: "Física", cor: "#6B4FA0" },
-  { cat: "mat", label: "Matemática", cor: "#2B5F58" },
-  { cat: "quim", label: "Química", cor: "#2E6E8E" },
-  { cat: "nat", label: "Natureza", cor: "#3F7D53" },
-  { cat: "hum", label: "Humanas", cor: "#A8631C" },
-  { cat: "ling", label: "Linguagens", cor: "#9C3D6B" },
-  { cat: "red", label: "Redação", cor: "#B8860B" },
-  { cat: "rev", label: "Erros e simulados", cor: "#5B6663" },
+  { cat: "fis", label: "Física", cor: "#9D83D8" },
+  { cat: "mat", label: "Matemática", cor: "#4FA396" },
+  { cat: "quim", label: "Química", cor: "#4A9CC4" },
+  { cat: "nat", label: "Natureza", cor: "#5BB27A" },
+  { cat: "hum", label: "Humanas", cor: "#D98A3D" },
+  { cat: "ling", label: "Linguagens", cor: "#D4699A" },
+  { cat: "red", label: "Redação", cor: "#D9A82E" },
+  { cat: "rev", label: "Erros e simulados", cor: "#8A9792" },
 ];
 const COR: Record<string, string> = Object.fromEntries(MATERIAS.map((m) => [m.cat, m.cor]));
 
@@ -73,7 +73,7 @@ function Pilula({
       className={
         "inline-flex items-center gap-2 rounded-full border px-3 py-1 text-sm transition " +
         (ativo
-          ? "border-ink/20 bg-white text-ink"
+          ? "border-ink/20 bg-surface text-ink"
           : "border-transparent text-ink/40 line-through hover:text-ink/60")
       }
     >
@@ -83,7 +83,7 @@ function Pilula({
   );
 }
 
-export default function Rota() {
+export default function Calendario() {
   const [hoje, setHoje] = useState<string | null>(null);
   const [mostrarProposta, setMostrarProposta] = useState(true);
   const [mostrarGenericos, setMostrarGenericos] = useState(false);
@@ -121,11 +121,11 @@ export default function Rota() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-2xl font-semibold">Rota até o Enem</h1>
+        <h1 className="font-display text-2xl font-semibold">Calendário até o Enem</h1>
         <p className="mt-1 max-w-2xl text-sm text-ink/60">
           Calendário de 30/09 a 15/11 com as provas em destaque. Itens tracejados são a proposta e
           ainda não estão no Google Calendar. Simulados registrados no Tracker aparecem no dia em
-          que foram feitos.
+          que foram feitos. A etiqueta D-N em cada dia conta quantos dias faltam para a próxima prova.
         </p>
       </div>
 
@@ -135,7 +135,7 @@ export default function Rota() {
           return (
             <div
               key={m.d + m.detalhe}
-              className={"rounded-lg border border-ink/10 bg-white p-3 " + (dias !== null && dias < 0 ? "opacity-50" : "")}
+              className={"rounded-lg border border-ink/10 bg-surface p-3 " + (dias !== null && dias < 0 ? "opacity-50" : "")}
             >
               <div className="font-display text-3xl font-semibold leading-none">
                 {dias === null ? " " : dias > 0 ? dias : dias === 0 ? "hoje" : "0"}
@@ -201,33 +201,45 @@ export default function Rota() {
               const aberto = abertos.has(dia);
               const d = new Date(utc(dia));
               const fimDeSemana = d.getUTCDay() === 0 || d.getUTCDay() === 6;
+              const proximaProva = MARCOS_PROVA.find((m) => m.d >= dia) ?? null;
+              const faltam = proximaProva ? Math.round((utc(proximaProva.d) - utc(dia)) / 86400000) : null;
               const vazio = !provas.length && !marcos.length && !visiveis.length && !propostas.length && !reais.length;
 
               return (
                 <article
                   key={dia}
                   className={
-                    "flex min-w-0 flex-col gap-1.5 rounded-lg border bg-white p-2 " +
+                    "flex min-w-0 flex-col gap-1.5 rounded-lg border bg-surface p-2 " +
                     (provas.length ? "border-ink " : "border-ink/10 ") +
                     (fimDeSemana ? "bg-ink/[0.03] " : "") +
                     (hoje && dia < hoje ? "opacity-50 " : "") +
-                    (dia === hoje ? "ring-2 ring-accent" : "")
+                    (dia === hoje ? "ring-2 ring-brand" : "")
                   }
                 >
-                  <button
-                    type="button"
-                    aria-expanded={aberto}
-                    title="Mostrar detalhes do dia"
-                    onClick={() => alternar(abertos, dia, setAbertos)}
-                    className="flex items-baseline gap-2 text-left text-xs text-ink/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
-                  >
-                    <b className="font-display text-xl font-semibold text-ink">{Number(dia.slice(8))}</b>
-                    <span>{DIAS[d.getUTCDay()]}</span>
-                    <span className="uppercase tracking-wider">{MESES[Number(dia.slice(5, 7)) - 1]}</span>
-                  </button>
+                  <div className="flex items-start justify-between gap-1">
+                    <button
+                      type="button"
+                      aria-expanded={aberto}
+                      title="Mostrar detalhes do dia"
+                      onClick={() => alternar(abertos, dia, setAbertos)}
+                      className="flex min-w-0 items-baseline gap-2 text-left text-xs text-ink/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand"
+                    >
+                      <b className="font-display text-xl font-semibold text-ink">{Number(dia.slice(8))}</b>
+                      <span>{DIAS[d.getUTCDay()]}</span>
+                      <span className="uppercase tracking-wider">{MESES[Number(dia.slice(5, 7)) - 1]}</span>
+                    </button>
+                    {faltam !== null && (
+                      <span
+                        title={faltam === 0 ? proximaProva!.nome + " " + proximaProva!.detalhe : "Faltam " + faltam + (faltam === 1 ? " dia" : " dias") + " para " + proximaProva!.nome + " " + proximaProva!.detalhe}
+                        className={"shrink-0 rounded px-1.5 py-0.5 font-mono text-[10.5px] " + (faltam === 0 ? "bg-ink font-medium text-paper" : "bg-ink/10 text-ink/70")}
+                      >
+                        {faltam === 0 ? "Dia D" : "D-" + faltam}
+                      </span>
+                    )}
+                  </div>
 
                   {provas.map((e) => (
-                    <div key={e.t} className="rounded bg-ink px-2 py-1 text-xs font-medium text-white">
+                    <div key={e.t} className="rounded bg-ink px-2 py-1 text-xs font-medium text-paper">
                       {limpar(e.t)}
                     </div>
                   ))}

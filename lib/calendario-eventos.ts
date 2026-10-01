@@ -1,4 +1,4 @@
-// Dados da pagina /rota: calendario de estudos de 30/09 a 15/11/2026.
+// Dados da pagina /calendario: calendario de estudos de 30/09 a 15/11/2026.
 // Snapshot do Google Calendar (30/09/2026) mais a proposta das proximas semanas.
 // Para atualizar, edite este arquivo (ou gere de novo a partir do calendario).
 

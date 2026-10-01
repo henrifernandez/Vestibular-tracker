@@ -83,17 +83,17 @@ export default function Resumo() {
       ) : (
         <>
           <div className="grid gap-3 sm:grid-cols-3">
-            <div className="bg-white rounded-xl border border-ink/10 p-4">
+            <div className="bg-surface rounded-xl border border-ink/10 p-4">
               <p className="text-xs uppercase tracking-wide text-ink/50 mb-1">Dias no cronograma</p>
               <p className="font-display text-3xl font-semibold">{totais.total}</p>
             </div>
-            <div className="bg-white rounded-xl border border-ink/10 p-4">
+            <div className="bg-surface rounded-xl border border-ink/10 p-4">
               <p className="text-xs uppercase tracking-wide text-ink/50 mb-1">Já estudados</p>
               <p className="font-display text-3xl font-semibold">
                 {totais.feitos} <span className="text-base font-sans font-normal text-ink/50">de {totais.total}</span>
               </p>
             </div>
-            <div className="bg-white rounded-xl border border-ink/10 p-4">
+            <div className="bg-surface rounded-xl border border-ink/10 p-4">
               <p className="text-xs uppercase tracking-wide text-ink/50 mb-1">Progresso geral</p>
               <p className="font-display text-3xl font-semibold">{totais.pct}%</p>
             </div>
@@ -104,13 +104,13 @@ export default function Resumo() {
               Últimos 7 dias ({fmtData(resumo.periodo.inicio)} – {fmtData(resumo.periodo.fim)})
             </h2>
             {resumo.porMateria.length === 0 ? (
-              <p className="text-sm text-ink/50 bg-white rounded-xl border border-ink/10 p-4">
+              <p className="text-sm text-ink/50 bg-surface rounded-xl border border-ink/10 p-4">
                 Nenhum dado de RemNote ou Notion sincronizado ainda.
               </p>
             ) : (
               <div className="grid gap-3 sm:grid-cols-3">
                 {resumo.porMateria.map((m) => (
-                  <div key={m.materia} className="bg-white rounded-xl border border-ink/10 p-4">
+                  <div key={m.materia} className="bg-surface rounded-xl border border-ink/10 p-4">
                     <p className="font-medium text-sm mb-2">{MATERIA_LABEL[m.materia] ?? m.materia}</p>
                     <div className="flex items-baseline justify-between text-sm mb-1">
                       <span className="text-ink/60">Cards feitos</span>
@@ -145,7 +145,7 @@ export default function Resumo() {
                     "text-xs px-3 py-1.5 rounded-full border transition " +
                     (filtroMateria === m
                       ? "bg-accent text-white border-accent"
-                      : "border-ink/15 text-ink/60 hover:border-accent/50 hover:text-accent")
+                      : "border-ink/15 text-ink/60 hover:border-accent/50 hover:text-brand")
                   }
                 >
                   {m === "Todas" ? "Todas" : MATERIA_LABEL[m]}
@@ -172,7 +172,7 @@ export default function Resumo() {
                 return (
                   <div
                     key={item.id}
-                    className="bg-white rounded-lg border border-ink/10 px-3.5 py-2.5 grid grid-cols-[56px_1fr_auto] gap-3 items-start"
+                    className="bg-surface rounded-lg border border-ink/10 px-3.5 py-2.5 grid grid-cols-[56px_1fr_auto] gap-3 items-start"
                   >
                     <div className="font-mono text-xs text-ink/50 pt-0.5">
                       {fmtData(item.data)}

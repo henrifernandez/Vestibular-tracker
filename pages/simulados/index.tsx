@@ -119,7 +119,7 @@ export default function ListaSimulados() {
           <button
             onClick={() => inputRef.current?.click()}
             disabled={importando}
-            className="text-sm text-accent hover:underline disabled:opacity-50"
+            className="text-sm text-brand hover:underline disabled:opacity-50"
           >
             {importando ? "importando..." : "+ importar CSV"}
           </button>
@@ -136,7 +136,7 @@ export default function ListaSimulados() {
           <button
             onClick={() => acaoFicticios("carregar")}
             disabled={ocupadoFicticio}
-            className="text-sm text-accent hover:underline disabled:opacity-50"
+            className="text-sm text-brand hover:underline disabled:opacity-50"
           >
             {ocupadoFicticio ? "aguarde..." : "+ dados fictícios"}
           </button>
@@ -149,7 +149,7 @@ export default function ListaSimulados() {
           </button>
           <button
             onClick={() => setMostrarFormulario((v) => !v)}
-            className="text-sm text-accent hover:underline"
+            className="text-sm text-brand hover:underline"
           >
             {mostrarFormulario ? "cancelar" : "+ registrar novo"}
           </button>
@@ -172,7 +172,7 @@ export default function ListaSimulados() {
       {resultadoImport && (
         <div className="bg-accent/5 rounded-lg p-3 text-sm space-y-1.5">
           <p>
-            <span className="font-medium text-accent">{resultadoImport.simuladosCriados}</span>{" "}
+            <span className="font-medium text-brand">{resultadoImport.simuladosCriados}</span>{" "}
             simulado(s) importado(s) com sucesso.
           </p>
           {resultadoImport.erros.length > 0 && (
@@ -196,13 +196,13 @@ export default function ListaSimulados() {
           return (
             <div
               key={s.id}
-              className="bg-white border border-ink/10 rounded-lg p-4 flex items-center justify-between gap-3"
+              className="bg-surface border border-ink/10 rounded-lg p-4 flex items-center justify-between gap-3"
             >
               <div>
                 <div className="flex items-center gap-2">
                   <Link
                     href={`/provas/${s.prova.slug}`}
-                    className="font-medium text-sm hover:text-accent"
+                    className="font-medium text-sm hover:text-brand"
                   >
                     {s.prova.nome}
                   </Link>
@@ -216,7 +216,7 @@ export default function ListaSimulados() {
               <div className="flex items-center gap-2 shrink-0">
                 <a
                   href={`/api/simulados/${s.id}/export`}
-                  className="text-sm border border-ink/15 rounded-md px-3 py-1.5 hover:border-accent hover:text-accent"
+                  className="text-sm border border-ink/15 rounded-md px-3 py-1.5 hover:border-accent hover:text-brand"
                 >
                   Exportar CSV
                 </a>

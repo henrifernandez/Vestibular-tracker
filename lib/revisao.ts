@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { MARCA as MARCA_FICTICIO } from "@/lib/seed-ficticio";
 
 export const DISCIPLINA_PADRAO = "A classificar";
 
@@ -155,6 +156,8 @@ export function agruparErros(resultados: ResultadoComErros[]): Map<string, Grupo
   const grupos = new Map<string, GrupoAssunto>();
 
   for (const r of resultados) {
+    // simulados de "dados fictícios" (seed de teste) não entram na revisão
+    if (r.simulado.observacao?.startsWith(MARCA_FICTICIO)) continue;
     if (r.simulado.observacao?.includes(MARCA_COPIA_ENEM)) {
       const chave = `${r.simulado.data.toISOString().slice(0, 10)}|${r.simulado.nome ?? ""}|${r.area.nome}`;
       if (copiasVistas.has(chave)) continue;

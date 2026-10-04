@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "@/lib/prisma";
 import { parseCSV } from "@/lib/csv";
+import { SLUG_ENEM_REGISTRO_UNICO, registrarSimuladoEnemComFanOut } from "@/lib/enem-fanout";
 
 export const config = {
   api: {
@@ -77,6 +78,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const provas = await prisma.prova.findMany({ include: { areas: true } });
   const provaPorNome = new Map(provas.map((p) => [normalizar(p.nome), p]));
+  const provaPorId = new Map(provas.map((p) => [p.id, p]));
 
   const erros: string[] = [];
   type Grupo = {
@@ -146,6 +148,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   let criados = 0;
   for (const grupo of grupos.values()) {
+    // Linhas da prova "ENEM (registro único)" seguem o mesmo caminho do formulário:
+    // viram cópias no ENEM-USP e no ENEM/SISU (que são as provas lidas pelo painel).
+    // Funciona com simulados parciais, ex: só a área Ciências da Natureza.
+    if (provaPorId.get(grupo.provaId)?.slug === SLUG_ENEM_REGISTRO_UNICO) {
+      const copias = await registrarSimuladoEnemComFanOut({
+        provaOrigemId: grupo.provaId,
+        data: grupo.data,
+        nome: grupo.nome,
+        resultados: grupo.resultados,
+      });
+      if (copias.length === 0) {
+        erros.push(
+          `Registro único de ENEM de ${grupo.data.toISOString().slice(0, 10)}: nenhuma área encontrada no ENEM-USP nem no ENEM/SISU.`
+        );
+      }
+      criados += copias.length;
+      continue;
+    }
+
     await prisma.simulado.create({
       data: {
         provaId: grupo.provaId,

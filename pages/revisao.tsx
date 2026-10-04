@@ -37,8 +37,79 @@ const CONFIANCA_LABEL = ["", "ainda confuso", "razoável", "dominado"];
 const campo =
   "bg-paper border border-ink/15 rounded-md px-2.5 py-1.5 text-sm focus:outline-none focus:border-accent";
 
+const STATUS_OPCOES = [
+  { valor: "", rotulo: "Todos" },
+  { valor: "PENDENTE", rotulo: "Pendentes" },
+  { valor: "REVISADO", rotulo: "Revisados" },
+] as const;
+
 function formatarData(iso: string) {
   return new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit" });
+}
+
+function Chevron() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-ink/40"
+    >
+      <polyline points="6 9 12 15 18 9" />
+    </svg>
+  );
+}
+
+// Select com seta própria. `forma="pilula"` para filtros, `forma="campo"` para formulários.
+function SelectBox({
+  value,
+  onChange,
+  children,
+  ativo = false,
+  forma = "campo",
+  rotulo,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  children: React.ReactNode;
+  ativo?: boolean;
+  forma?: "pilula" | "campo";
+  rotulo: string;
+}) {
+  const base =
+    forma === "pilula"
+      ? "rounded-full pl-3.5 pr-9 py-1.5 text-sm border transition cursor-pointer " +
+        (ativo
+          ? "border-brand/50 bg-accent/15 text-brand"
+          : "border-ink/10 bg-surface text-ink/70 hover:border-ink/25")
+      : campo + " pr-8 w-full cursor-pointer";
+  return (
+    <div className={"relative " + (forma === "campo" ? "w-full" : "")}>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        aria-label={rotulo}
+        className={"appearance-none focus:outline-none focus:border-accent " + base}
+      >
+        {children}
+      </select>
+      <Chevron />
+    </div>
+  );
+}
+
+function Numero({ n, singular, plural, cor }: { n: number; singular: string; plural: string; cor: string }) {
+  return (
+    <span className="inline-flex items-baseline gap-1.5 rounded-full border border-ink/10 bg-paper/60 px-3 py-1 text-xs">
+      <span className={"font-mono text-sm font-medium " + (n > 0 ? cor : "text-ink/35")}>{n}</span>
+      <span className="text-ink/55">{n === 1 ? singular : plural}</span>
+    </span>
+  );
 }
 
 export default function Revisao() {
@@ -250,15 +321,11 @@ export default function Revisao() {
             </label>
             <label className="text-xs text-ink/60 space-y-1">
               <span>Prioridade</span>
-              <select
-                value={novo.prioridade}
-                onChange={(e) => setNovo({ ...novo, prioridade: e.target.value })}
-                className={campo + " w-full"}
-              >
+              <SelectBox rotulo="Prioridade" value={novo.prioridade} onChange={(v) => setNovo({ ...novo, prioridade: v })}>
                 <option value="ALTA">Alta</option>
                 <option value="MEDIA">Média</option>
                 <option value="BAIXA">Baixa</option>
-              </select>
+              </SelectBox>
             </label>
           </div>
           <label className="text-xs text-ink/60 space-y-1 block">
@@ -292,45 +359,115 @@ export default function Revisao() {
       {erro && <p className="text-sm text-warn">{erro}</p>}
 
       {resultadoSync && (
-        <div className="bg-accent/5 rounded-lg p-3 text-sm">
-          Importação concluída: <span className="font-medium text-brand">{resultadoSync.criados}</span>{" "}
-          criado(s), <span className="font-medium text-brand">{resultadoSync.atualizados}</span> atualizado(s) e{" "}
-          <span className="font-medium text-brand">{resultadoSync.reabertos}</span> reaberto(s).
+        <div className="rounded-xl border border-good/25 bg-good/[0.06] p-4 flex items-start gap-3.5">
+          <span className="h-9 w-9 rounded-full bg-good/15 text-good flex items-center justify-center flex-shrink-0">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="font-display text-[17px] font-semibold leading-tight">Importação concluída</p>
+            <p className="text-xs text-ink/55 mt-1">
+              {resultadoSync.criados + resultadoSync.atualizados + resultadoSync.reabertos === 0
+                ? "Tudo já estava sincronizado com os seus simulados."
+                : "Os conteúdos errados dos simulados foram sincronizados."}
+            </p>
+            <div className="flex flex-wrap gap-2 mt-3">
+              <Numero n={resultadoSync.criados} singular="criado" plural="criados" cor="text-good" />
+              <Numero n={resultadoSync.atualizados} singular="atualizado" plural="atualizados" cor="text-brand" />
+              <Numero n={resultadoSync.reabertos} singular="reaberto" plural="reabertos" cor="text-atencao" />
+            </div>
+          </div>
+          <button
+            onClick={() => setResultadoSync(null)}
+            aria-label="Fechar aviso"
+            className="rounded-md p-1 text-ink/35 hover:text-ink hover:bg-ink/5 transition"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
         </div>
       )}
 
       {/* Filtros */}
-      <div className="flex flex-wrap items-center gap-3 text-sm">
-        <select value={filtroStatus} onChange={(e) => setFiltroStatus(e.target.value)} className={campo}>
-          <option value="">Todos os status</option>
-          <option value="PENDENTE">Pendentes</option>
-          <option value="REVISADO">Revisados</option>
-        </select>
-        <select value={filtroDisciplina} onChange={(e) => setFiltroDisciplina(e.target.value)} className={campo}>
-          <option value="">Todas as disciplinas</option>
-          {(resumo?.disciplinas ?? []).map((d) => (
-            <option key={d} value={d}>
-              {d}
-            </option>
-          ))}
-        </select>
-        <select value={filtroPrioridade} onChange={(e) => setFiltroPrioridade(e.target.value)} className={campo}>
-          <option value="">Todas as prioridades</option>
-          <option value="ALTA">Alta</option>
-          <option value="MEDIA">Média</option>
-          <option value="BAIXA">Baixa</option>
-        </select>
-        {temFiltro && (
-          <button
-            onClick={() => {
-              setFiltroStatus("");
-              setFiltroDisciplina("");
-              setFiltroPrioridade("");
-            }}
-            className="text-xs text-ink/50 hover:underline"
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <div role="group" aria-label="Filtrar por status" className="inline-flex rounded-full border border-ink/10 bg-surface p-0.5">
+            {STATUS_OPCOES.map((op) => {
+              const ativo = filtroStatus === op.valor;
+              const contagem =
+                resumo == null ? null : op.valor === "PENDENTE" ? resumo.pendentes : op.valor === "REVISADO" ? resumo.revisados : resumo.total;
+              return (
+                <button
+                  key={op.valor}
+                  onClick={() => setFiltroStatus(op.valor)}
+                  aria-pressed={ativo}
+                  className={
+                    "rounded-full px-3.5 py-1 text-sm transition flex items-center gap-1.5 " +
+                    (ativo ? "bg-accent text-white" : "text-ink/60 hover:text-ink")
+                  }
+                >
+                  {op.rotulo}
+                  {contagem != null && (
+                    <span className={"font-mono text-[11px] " + (ativo ? "text-white/75" : "text-ink/35")}>{contagem}</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          <SelectBox
+            forma="pilula"
+            rotulo="Filtrar por disciplina"
+            value={filtroDisciplina}
+            onChange={setFiltroDisciplina}
+            ativo={!!filtroDisciplina}
           >
-            limpar filtros
-          </button>
+            <option value="">Todas as disciplinas</option>
+            {(resumo?.disciplinas ?? []).map((d) => (
+              <option key={d} value={d}>
+                {d}
+              </option>
+            ))}
+          </SelectBox>
+
+          <SelectBox
+            forma="pilula"
+            rotulo="Filtrar por prioridade"
+            value={filtroPrioridade}
+            onChange={setFiltroPrioridade}
+            ativo={!!filtroPrioridade}
+          >
+            <option value="">Todas as prioridades</option>
+            <option value="ALTA">Prioridade alta</option>
+            <option value="MEDIA">Prioridade média</option>
+            <option value="BAIXA">Prioridade baixa</option>
+          </SelectBox>
+
+          {temFiltro && (
+            <button
+              onClick={() => {
+                setFiltroStatus("");
+                setFiltroDisciplina("");
+                setFiltroPrioridade("");
+              }}
+              className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs text-ink/50 hover:text-ink hover:bg-ink/5 transition"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+              limpar filtros
+            </button>
+          )}
+        </div>
+
+        {itens && (
+          <span className="font-mono text-xs text-ink/40">
+            {itens.length} {itens.length === 1 ? "conteúdo" : "conteúdos"}
+          </span>
         )}
       </div>
 
@@ -367,16 +504,11 @@ export default function Revisao() {
                     className={campo}
                     aria-label="Disciplina"
                   />
-                  <select
-                    value={edicao.prioridade}
-                    onChange={(e) => setEdicao({ ...edicao, prioridade: e.target.value })}
-                    className={campo}
-                    aria-label="Prioridade"
-                  >
+                  <SelectBox rotulo="Prioridade" value={edicao.prioridade} onChange={(v) => setEdicao({ ...edicao, prioridade: v })}>
                     <option value="ALTA">Alta</option>
                     <option value="MEDIA">Média</option>
                     <option value="BAIXA">Baixa</option>
-                  </select>
+                  </SelectBox>
                 </div>
                 <textarea
                   value={edicao.observacao}

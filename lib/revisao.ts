@@ -132,11 +132,21 @@ export function ordenarParaRevisao<
   });
 }
 
-export type ResultadoSincronizacao = { criados: number; atualizados: number; reabertos: number };
+// Só entram na revisão os assuntos que apareceram em pelo menos esta quantidade de
+// simulados diferentes (erro repetido, não um deslize isolado).
+export const MIN_SIMULADOS = 2;
+
+export type ResultadoSincronizacao = {
+  criados: number;
+  atualizados: number;
+  reabertos: number;
+  removidos: number;
+};
 
 export type GrupoAssunto = {
   assunto: string;
-  vezes: number;
+  vezes: number; // ocorrências do erro (mesmo simulado pode repetir)
+  simulados: number; // em quantos simulados diferentes o assunto apareceu
   areaId: string;
   areaNome: string;
 };
@@ -144,24 +154,29 @@ export type GrupoAssunto = {
 type ResultadoComErros = {
   areaId: string;
   area: { nome: string };
-  simulado: { data: Date; nome: string | null; observacao: string | null };
+  simulado: { id: string; data: Date; nome: string | null; observacao: string | null };
   conteudosErrados: { conteudo: string }[];
 };
 
 // Junta os erros por assunto normalizado. O registro único de ENEM grava uma cópia
 // no ENEM-USP e outra no ENEM/SISU; conta só uma cópia por (data, nome, área) para
-// o erro não valer em dobro. Recebe os resultados em ordem de criação.
+// o erro não valer em dobro, e as duas cópias contam como um simulado só.
+// Recebe os resultados em ordem de criação.
 export function agruparErros(resultados: ResultadoComErros[]): Map<string, GrupoAssunto> {
   const copiasVistas = new Set<string>();
   const grupos = new Map<string, GrupoAssunto>();
+  const simuladosPorAssunto = new Map<string, Set<string>>();
 
   for (const r of resultados) {
     // simulados de "dados fictícios" (seed de teste) não entram na revisão
     if (r.simulado.observacao?.startsWith(MARCA_FICTICIO)) continue;
+    let idSimulado = r.simulado.id;
     if (r.simulado.observacao?.includes(MARCA_COPIA_ENEM)) {
-      const chave = `${r.simulado.data.toISOString().slice(0, 10)}|${r.simulado.nome ?? ""}|${r.area.nome}`;
+      const dia = r.simulado.data.toISOString().slice(0, 10);
+      const chave = `${dia}|${r.simulado.nome ?? ""}|${r.area.nome}`;
       if (copiasVistas.has(chave)) continue;
       copiasVistas.add(chave);
+      idSimulado = `enem|${dia}|${r.simulado.nome ?? ""}`;
     }
     for (const c of r.conteudosErrados) {
       const assunto = c.conteudo.trim();
@@ -169,9 +184,14 @@ export function agruparErros(resultados: ResultadoComErros[]): Map<string, Grupo
       if (!norm) continue;
       const g = grupos.get(norm);
       if (g) g.vezes++;
-      else grupos.set(norm, { assunto, vezes: 1, areaId: r.areaId, areaNome: r.area.nome });
+      else
+        grupos.set(norm, { assunto, vezes: 1, simulados: 0, areaId: r.areaId, areaNome: r.area.nome });
+      const ids = simuladosPorAssunto.get(norm) ?? new Set<string>();
+      ids.add(idSimulado);
+      simuladosPorAssunto.set(norm, ids);
     }
   }
+  for (const [norm, ids] of simuladosPorAssunto) grupos.get(norm)!.simulados = ids.size;
   return grupos;
 }
 
@@ -189,12 +209,27 @@ export async function sincronizarSimulados(): Promise<ResultadoSincronizacao> {
   });
   const grupos = agruparErros(resultados);
 
-  const existentes = await prisma.conteudoRevisao.findMany();
+  const existentes = await prisma.conteudoRevisao.findMany({
+    include: { _count: { select: { logs: true } } },
+  });
   const porNorm = new Map<string, typeof existentes>();
   for (const e of existentes) {
     const lista = porNorm.get(e.assuntoNorm);
     if (lista) lista.push(e);
     else porNorm.set(e.assuntoNorm, [e]);
+  }
+
+  // Itens que a própria importação criou, ninguém mexeu e que não aparecem mais em
+  // MIN_SIMULADOS simulados saem da lista. O que foi revisado, comentado ou teve a
+  // prioridade ajustada fica.
+  const removiveis = new Set<string>();
+  for (const e of existentes) {
+    if (e.origem !== "SIMULADO") continue;
+    const g = grupos.get(e.assuntoNorm);
+    if (g && g.simulados >= MIN_SIMULADOS) continue;
+    const intocado =
+      e.status === "PENDENTE" && e._count.logs === 0 && !e.observacao && e.prioridade === "MEDIA";
+    if (intocado) removiveis.add(e.id);
   }
 
   const novos: Prisma.ConteudoRevisaoCreateManyInput[] = [];
@@ -204,9 +239,10 @@ export async function sincronizarSimulados(): Promise<ResultadoSincronizacao> {
 
   for (const [norm, g] of grupos) {
     const disciplina = classificarDisciplina(g.assunto, g.areaNome);
-    const lista = porNorm.get(norm);
+    const lista = (porNorm.get(norm) ?? []).filter((e) => !removiveis.has(e.id));
 
-    if (!lista) {
+    if (lista.length === 0) {
+      if (g.simulados < MIN_SIMULADOS) continue;
       novos.push({
         assunto: g.assunto,
         assuntoNorm: norm,
@@ -245,11 +281,14 @@ export async function sincronizarSimulados(): Promise<ResultadoSincronizacao> {
   }
 
   await prisma.$transaction([
+    ...(removiveis.size
+      ? [prisma.conteudoRevisao.deleteMany({ where: { id: { in: [...removiveis] } } })]
+      : []),
     ...(novos.length ? [prisma.conteudoRevisao.createMany({ data: novos })] : []),
     ...atualizacoes,
   ]);
 
-  return { criados: novos.length, atualizados, reabertos };
+  return { criados: novos.length, atualizados, reabertos, removidos: removiveis.size };
 }
 
 export async function resumoRevisao() {

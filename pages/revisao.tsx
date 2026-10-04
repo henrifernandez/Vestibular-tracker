@@ -24,7 +24,7 @@ type Resumo = {
   disciplinas: string[];
 };
 
-type ResultadoSync = { criados: number; atualizados: number; reabertos: number };
+type ResultadoSync = { criados: number; atualizados: number; reabertos: number; removidos: number };
 
 const PRIORIDADE_LABEL = { ALTA: "Alta", MEDIA: "Média", BAIXA: "Baixa" } as const;
 const PRIORIDADE_COR = {
@@ -251,7 +251,12 @@ export default function Revisao() {
   return (
     <div className="space-y-6">
       <div className="flex items-baseline justify-between flex-wrap gap-2">
-        <h1 className="font-display text-2xl font-semibold">Revisão</h1>
+        <div>
+          <h1 className="font-display text-2xl font-semibold">Revisão</h1>
+          <p className="text-xs text-ink/50 mt-1">
+            Entram os assuntos que você errou em 2 ou mais simulados, mais os que adicionar à mão.
+          </p>
+        </div>
         <div className="flex items-center gap-4">
           <button
             onClick={importar}
@@ -368,7 +373,7 @@ export default function Revisao() {
           <div className="min-w-0 flex-1">
             <p className="font-display text-[17px] font-semibold leading-tight">Importação concluída</p>
             <p className="text-xs text-ink/55 mt-1">
-              {resultadoSync.criados + resultadoSync.atualizados + resultadoSync.reabertos === 0
+              {resultadoSync.criados + resultadoSync.atualizados + resultadoSync.reabertos + resultadoSync.removidos === 0
                 ? "Tudo já estava sincronizado com os seus simulados."
                 : "Os conteúdos errados dos simulados foram sincronizados."}
             </p>
@@ -376,6 +381,7 @@ export default function Revisao() {
               <Numero n={resultadoSync.criados} singular="criado" plural="criados" cor="text-good" />
               <Numero n={resultadoSync.atualizados} singular="atualizado" plural="atualizados" cor="text-brand" />
               <Numero n={resultadoSync.reabertos} singular="reaberto" plural="reabertos" cor="text-atencao" />
+              <Numero n={resultadoSync.removidos ?? 0} singular="removido" plural="removidos" cor="text-ink/70" />
             </div>
           </div>
           <button
@@ -478,7 +484,7 @@ export default function Revisao() {
         <p className="text-sm text-ink/50">
           {temFiltro
             ? "Nenhum conteúdo com esses filtros."
-            : "Nenhum conteúdo para revisar ainda. Use “importar dos simulados” ou “+ adicionar conteúdo”."}
+            : "Nenhum conteúdo para revisar ainda. A importação só traz assuntos que apareceram em 2 ou mais simulados; você também pode usar “+ adicionar conteúdo”."}
         </p>
       )}
 

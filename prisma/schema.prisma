@@ -31,6 +31,7 @@ model Area {
   ordem          Int          @default(0)
   metas          Meta[]
   resultados     Resultado[]
+  conteudosRevisao ConteudoRevisao[]
 
   @@unique([provaId, nome])
 }
@@ -114,6 +115,43 @@ model PlanoEstudo {
   feito        Boolean  @default(false)
   observacoes  String?  @db.Text
   syncedAt     DateTime @default(now())
+  flashcardsGerados Boolean @default(false)
 
   @@index([materia, data])
+}
+
+// Conteúdo a revisar: cadastrado à mão ou vindo dos ConteudoErrado dos simulados.
+// assuntoNorm (minúsculas, sem acento, sem espaços extras) evita duplicata.
+// prioridade: ALTA | MEDIA | BAIXA. status: PENDENTE | REVISADO. origem: MANUAL | SIMULADO.
+// (strings validadas em lib/revisao.ts, como os demais campos de texto do schema)
+model ConteudoRevisao {
+  id          String       @id @default(cuid())
+  assunto     String
+  assuntoNorm String
+  disciplina  String       @default("A classificar")
+  areaId      String?
+  area        Area?        @relation(fields: [areaId], references: [id], onDelete: SetNull)
+  prioridade  String       @default("MEDIA")
+  status      String       @default("PENDENTE")
+  vezesErrado Int          @default(0)
+  origem      String       @default("MANUAL")
+  observacao  String?      @db.Text
+  revisadoEm  DateTime?
+  logs        RevisaoLog[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@unique([assuntoNorm, disciplina])
+  @@index([status, prioridade])
+}
+
+// Uma linha por vez que o conteúdo foi marcado como revisado (histórico).
+model RevisaoLog {
+  id         String          @id @default(cuid())
+  conteudoId String
+  conteudo   ConteudoRevisao @relation(fields: [conteudoId], references: [id], onDelete: Cascade)
+  revisadoEm DateTime        @default(now())
+  confianca  Int?            // 1 a 3
+
+  @@index([conteudoId, revisadoEm])
 }

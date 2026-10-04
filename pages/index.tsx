@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ehRedacao } from "@/lib/redacao";
+import CardRevisao from "@/components/CardRevisao";
 import {
   estimarTRI,
   corSensor,
@@ -54,8 +55,6 @@ type SimuladoRow = {
 };
 
 type PlanoEstudoRow = { feito: boolean; syncedAt: string; materia: string };
-type RemnoteRow = { materia: string; syncedAt: string; cardsFeitos: number; cardsCorretos: number };
-type ResumoMateria = { materia: string; cardsFeitosSemana: number };
 
 // Provas que na prática são a mesma prova física (ENEM), só com peso e nota de
 // corte diferentes por universidade — por isso ficam agrupadas visualmente em
@@ -63,14 +62,6 @@ type ResumoMateria = { materia: string; cardsFeitosSemana: number };
 // pages/api/simulados/index.ts, que já faz esse fan-out no registro.
 const GRUPOS: Record<string, { label: string; membros: string[] }> = {
   enem: { label: "ENEM", membros: ["enem-usp", "unicamp-sisu"] },
-};
-
-const MATERIA_ESTILO: Record<string, { bg: string; sigla: string }> = {
-  Biologia: { bg: "bg-bio", sigla: "BIO" },
-  Quimica: { bg: "bg-qui", sigla: "QUI" },
-  Química: { bg: "bg-qui", sigla: "QUI" },
-  Fisica: { bg: "bg-fis", sigla: "FIS" },
-  Física: { bg: "bg-fis", sigla: "FIS" },
 };
 
 function ChevronIcon({ aberto }: { aberto: boolean }) {
@@ -208,8 +199,6 @@ export default function Dashboard() {
   const [provas, setProvas] = useState<ProvaDash[] | null>(null);
   const [simulados, setSimulados] = useState<SimuladoRow[] | null>(null);
   const [plano, setPlano] = useState<PlanoEstudoRow[] | null>(null);
-  const [remnote, setRemnote] = useState<RemnoteRow[] | null>(null);
-  const [resumo, setResumo] = useState<ResumoMateria[] | null>(null);
   const [abertoId, setAbertoId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -217,14 +206,10 @@ export default function Dashboard() {
       fetch("/api/dashboard").then((r) => r.json()),
       fetch("/api/simulados").then((r) => r.json()),
       fetch("/api/notion-sync").then((r) => r.json()),
-      fetch("/api/remnote-sync").then((r) => r.json()),
-      fetch("/api/resumo-semanal").then((r) => r.json()),
-    ]).then(([d, s, p, rn, rs]) => {
+    ]).then(([d, s, p]) => {
       setProvas(d);
       setSimulados(s);
       setPlano(p);
-      setRemnote(rn);
-      setResumo(rs.porMateria ?? []);
     });
   }, []);
 
@@ -233,7 +218,7 @@ export default function Dashboard() {
     []
   );
 
-  if (!provas || !simulados || !plano || !remnote || !resumo) {
+  if (!provas || !simulados || !plano) {
     return <p className="text-sm text-ink/60">Carregando...</p>;
   }
 
@@ -258,19 +243,12 @@ export default function Dashboard() {
     ? Math.round(progressos.reduce((s, v) => s + v, 0) / progressos.length)
     : null;
 
-  const cardsRevisadosSemana = resumo.reduce((s, m) => s + m.cardsFeitosSemana, 0);
   const cronogramaFeito = plano.filter((p) => p.feito).length;
   const pctCronograma = plano.length ? Math.round((cronogramaFeito / plano.length) * 100) : null;
 
   const ultimaSyncNotion = plano.length
     ? plano.reduce((max, p) => (p.syncedAt > max ? p.syncedAt : max), plano[0].syncedAt)
     : null;
-  const ultimaSyncRemnote = remnote.length
-    ? remnote.reduce((max, r) => (r.syncedAt > max ? r.syncedAt : max), remnote[0].syncedAt)
-    : null;
-
-  const materiasNotion = Array.from(new Set(plano.map((p) => p.materia).filter(Boolean)));
-  const remnotePorMateria = new Map(remnote.map((r) => [r.materia, r]));
 
   const simuladosRecentes = simulados.slice(0, 6);
 
@@ -281,7 +259,7 @@ export default function Dashboard() {
         <div>
           <h1 className="font-display text-2xl font-semibold">Painel de evolução</h1>
           <p className="text-sm text-ink/60 mt-1">
-            Progresso consolidado de simulados, cronograma e flashcards.
+            Progresso consolidado de simulados, cronograma e revisão.
           </p>
         </div>
         <div className="flex gap-2">
@@ -290,13 +268,6 @@ export default function Dashboard() {
             <span className="font-medium">Notion</span>
             <span className="font-mono text-ink/50">
               {ultimaSyncNotion ? `sync ${formatHora(ultimaSyncNotion)}` : "nunca"}
-            </span>
-          </span>
-          <span className="inline-flex items-center gap-1.5 bg-surface border border-ink/10 rounded-full pl-2.5 pr-3 py-1.5 text-xs">
-            <span className={"h-1.5 w-1.5 rounded-full " + (ultimaSyncRemnote ? "bg-good" : "bg-brand")} />
-            <span className="font-medium">RemNote</span>
-            <span className="font-mono text-ink/50">
-              {ultimaSyncRemnote ? `sync ${formatHora(ultimaSyncRemnote)}` : "aguardando reconexão"}
             </span>
           </span>
         </div>
@@ -316,15 +287,7 @@ export default function Dashboard() {
           <div className="font-display text-2xl font-semibold mt-1">{simulados.length}</div>
           <div className="text-xs text-ink/50 mt-1">no total</div>
         </div>
-        <div className="bg-surface rounded-xl border border-ink/10 p-4">
-          <div className="font-mono text-[11px] uppercase tracking-wide text-ink/45">Cards revisados (7d)</div>
-          <div className={"font-display text-2xl font-semibold mt-1 " + (remnote.length ? "" : "text-brand")}>
-            {remnote.length ? cardsRevisadosSemana : "—"}
-          </div>
-          <div className={"text-xs mt-1 " + (remnote.length ? "text-ink/50" : "text-brand")}>
-            {remnote.length ? "últimos 7 dias" : "RemNote ainda não sincronizado"}
-          </div>
-        </div>
+        <CardRevisao />
         <div className="bg-surface rounded-xl border border-ink/10 p-4">
           <div className="font-mono text-[11px] uppercase tracking-wide text-ink/45">Cronograma cumprido</div>
           <div className="font-display text-2xl font-semibold mt-1">
@@ -548,48 +511,6 @@ export default function Dashboard() {
                   {pct != null ? `${pct}%` : ""}
                 </span>
               </Link>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* RemNote status */}
-      <div className="bg-surface rounded-xl border border-ink/10 p-4">
-        <div className="flex items-center gap-2 mb-3.5 flex-wrap">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={ultimaSyncRemnote ? "text-good" : "text-brand"}>
-            <path d="M23 4v6h-6"></path>
-            <path d="M1 20v-6h6"></path>
-            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-          </svg>
-          <h2 className="font-display font-semibold text-base">Flashcards (RemNote)</h2>
-          <span className={"text-xs " + (ultimaSyncRemnote ? "text-ink/50" : "text-brand")}>
-            {ultimaSyncRemnote
-              ? `última sincronização: hoje às ${formatHora(ultimaSyncRemnote)}`
-              : "última sincronização: nunca — plugin aguardando reconexão"}
-          </span>
-        </div>
-        <div className="grid gap-3 sm:grid-cols-3">
-          {materiasNotion.map((materia) => {
-            const estilo = MATERIA_ESTILO[materia] ?? { bg: "bg-ink/60", sigla: materia.slice(0, 3).toUpperCase() };
-            const dados = remnotePorMateria.get(materia);
-            return (
-              <div
-                key={materia}
-                className={
-                  "rounded-lg p-3 flex items-center gap-2.5 " +
-                  (dados ? "border border-ink/10" : "border border-dashed border-ink/20")
-                }
-              >
-                <div className={"w-8 h-8 rounded-lg text-paper flex items-center justify-center font-mono text-[11px] font-semibold flex-shrink-0 " + estilo.bg}>
-                  {estilo.sigla}
-                </div>
-                <div>
-                  <div className="text-sm font-medium">{materia}</div>
-                  <div className="text-[11px] text-ink/45">
-                    {dados ? `${dados.cardsFeitos} cards · ${dados.cardsCorretos} certos` : "sem dados ainda"}
-                  </div>
-                </div>
-              </div>
             );
           })}
         </div>

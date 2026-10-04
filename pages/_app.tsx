@@ -24,6 +24,7 @@ const NAV = [
   { href: "/", label: "Dashboard" },
   { href: "/resumo", label: "Resumo semanal" },
   { href: "/simulados", label: "Simulados" },
+  { href: "/revisao", label: "Revisão" },
   { href: "/calendario", label: "Calendário" },
 ];
 

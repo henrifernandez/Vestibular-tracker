@@ -29,6 +29,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     descricao: prova.descricao,
     areas: prova.areas.map((area) => {
       const ultimo = area.resultados[area.resultados.length - 1];
+      // melhor resultado da área entre todos os simulados (usado na nota do ENEM)
+      const melhor = area.resultados.reduce<(typeof area.resultados)[number] | undefined>(
+        (m, r) => (!m || r.acertos > m.acertos ? r : m),
+        undefined
+      );
+      const melhorNota = area.resultados.reduce<number | null>(
+        (m, r) => (r.notaEstimada == null ? m : m == null ? r.notaEstimada : Math.max(m, r.notaEstimada)),
+        null
+      );
       const redacao = ehRedacao(area.nome);
 
       // Redação: progresso vem da nota estimada (IA) contra a meta de nota,
@@ -46,6 +55,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           metas: area.metas,
           ehRedacao: true,
           ultimaNota: ultimo?.notaEstimada ?? null,
+          melhorNota,
           ultimoAcertos: null,
           ultimoTotal: null,
           progresso:
@@ -69,6 +79,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         ehRedacao: false,
         ultimoAcertos: ultimo?.acertos ?? null,
         ultimoTotal: ultimo?.totalQuestoes ?? null,
+        melhorAcertos: melhor?.acertos ?? null,
+        melhorTotal: melhor?.totalQuestoes ?? null,
         progresso:
           ultimo && melhorMetaAcertos
             ? Math.min(100, Math.round((ultimo.acertos / melhorMetaAcertos) * 100))

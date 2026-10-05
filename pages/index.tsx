@@ -25,6 +25,9 @@ type AreaDash = {
   totalQuestoes: number;
   ehRedacao?: boolean;
   ultimaNota?: number | null;
+  melhorNota?: number | null;
+  melhorAcertos?: number | null;
+  melhorTotal?: number | null;
   ultimoAcertos: number | null;
   ultimoTotal: number | null;
   progresso: number | null;
@@ -149,9 +152,10 @@ function valoresTriPorArea(prova: ProvaDash): Record<string, number | null> {
   const valores: Record<string, number | null> = {};
   for (const area of prova.areas) {
     if (ehRedacao(area.nome)) {
-      valores[area.nome] = area.ultimaNota ?? null;
+      valores[area.nome] = area.melhorNota ?? area.ultimaNota ?? null;
     } else {
-      valores[area.nome] = area.ultimoAcertos != null ? estimarTRI(area.nome, area.ultimoAcertos) : null;
+      const acertos = area.melhorAcertos ?? area.ultimoAcertos;
+      valores[area.nome] = acertos != null ? estimarTRI(area.nome, acertos) : null;
     }
   }
   return valores;
@@ -342,6 +346,9 @@ export default function Dashboard() {
                   </button>
                   {aberto && (
                     <div className="px-5 pb-4 pl-[50px] grid gap-3 sm:grid-cols-2">
+                      <p className="text-xs text-ink/45 sm:col-span-2">
+                        A nota do ENEM usa o melhor resultado de cada área entre todos os simulados.
+                      </p>
                       {linha.destinos.map((d) => {
                         const nf = calcularNF(d);
                         const meta = NF_META[d.slug];
@@ -360,8 +367,13 @@ export default function Dashboard() {
                             <div className="mt-3 space-y-2.5">
                               {d.areas.map((area) => {
                                 const redacao = ehRedacao(area.nome);
-                                const valor = redacao ? area.ultimaNota ?? null : area.ultimoAcertos;
+                                // ENEM mostra o melhor resultado da área, não o último
+                                const valor = redacao
+                                  ? area.melhorNota ?? area.ultimaNota ?? null
+                                  : area.melhorAcertos ?? area.ultimoAcertos;
                                 const meta = redacao ? metaNota(area) : metaAcertos(area);
+                                const progresso =
+                                  valor != null && meta ? Math.min(100, Math.round((valor / meta) * 100)) : 0;
                                 const margem = redacao ? MARGEM_TRI : MARGEM_ACERTOS;
                                 const sensor = valor != null && meta != null ? corSensor(valor, meta, margem) : null;
                                 return (
@@ -376,7 +388,7 @@ export default function Dashboard() {
                                     <div className="h-2 rounded-full bg-ink/10 overflow-hidden">
                                       <div
                                         className={"h-full rounded-full " + (sensor ? SENSOR_BAR[sensor] : "bg-accent")}
-                                        style={{ width: `${area.progresso ?? 0}%` }}
+                                        style={{ width: `${progresso}%` }}
                                       />
                                     </div>
                                   </div>

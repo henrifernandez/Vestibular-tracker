@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import RegistrarSimuladoForm from "@/components/RegistrarSimuladoForm";
+import RegistrarSimuladoForm, { textoRevisao, type ResultadoRevisao } from "@/components/RegistrarSimuladoForm";
 
 type Simulado = {
   id: string;
@@ -10,7 +10,12 @@ type Simulado = {
   resultados: { acertos: number; totalQuestoes: number }[];
 };
 
-type ResultadoImport = { simuladosCriados: number; erros: string[] };
+type ResultadoImport = {
+  simuladosCriados: number;
+  erros: string[];
+  revisao?: ResultadoRevisao | null;
+  revisaoFalhou?: boolean;
+};
 
 export default function ListaSimulados() {
   const [simulados, setSimulados] = useState<Simulado[] | null>(null);
@@ -22,6 +27,7 @@ export default function ListaSimulados() {
   const [erroImport, setErroImport] = useState<string | null>(null);
 
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
+  const [avisoRevisao, setAvisoRevisao] = useState<string | null>(null);
 
   const [ocupadoFicticio, setOcupadoFicticio] = useState(false);
   const [msgFicticio, setMsgFicticio] = useState<string | null>(null);
@@ -158,8 +164,9 @@ export default function ListaSimulados() {
 
       {mostrarFormulario && (
         <RegistrarSimuladoForm
-          onSalvo={() => {
+          onSalvo={(revisao) => {
             setMostrarFormulario(false);
+            setAvisoRevisao(textoRevisao(revisao));
             carregarSimulados();
           }}
         />
@@ -169,12 +176,29 @@ export default function ListaSimulados() {
 
       {erroImport && <p className="text-sm text-warn">{erroImport}</p>}
 
+      {avisoRevisao && (
+        <p className="text-sm text-ink/70">
+          {avisoRevisao}{" "}
+          <Link href="/revisao" className="text-brand hover:underline">
+            ver Revisão
+          </Link>
+        </p>
+      )}
+
       {resultadoImport && (
         <div className="bg-accent/5 rounded-lg p-3 text-sm space-y-1.5">
           <p>
             <span className="font-medium text-brand">{resultadoImport.simuladosCriados}</span>{" "}
             simulado(s) importado(s) com sucesso.
           </p>
+          {resultadoImport.simuladosCriados > 0 && (
+            <p className={resultadoImport.revisaoFalhou ? "text-warn" : "text-ink/70"}>
+              {textoRevisao(resultadoImport.revisao)}{" "}
+              <Link href="/revisao" className="text-brand hover:underline">
+                ver Revisão
+              </Link>
+            </p>
+          )}
           {resultadoImport.erros.length > 0 && (
             <ul className="text-xs text-ink/60 list-disc pl-5 space-y-0.5">
               {resultadoImport.erros.map((e, i) => (

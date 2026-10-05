@@ -27,7 +27,34 @@ type LinhaResultado = {
   erroAvaliacao: string | null;
 };
 
-export default function RegistrarSimuladoForm({ onSalvo }: { onSalvo: () => void }) {
+// Resultado da sincronização automática com a seção Revisão (vem na resposta do servidor).
+export type ResultadoRevisao = {
+  criados: number;
+  atualizados: number;
+  reabertos: number;
+  removidos: number;
+};
+
+// Texto curto para avisar o que aconteceu na Revisão depois de salvar um simulado.
+// rev null significa que a sincronização falhou (o simulado foi salvo mesmo assim).
+export function textoRevisao(rev: ResultadoRevisao | null | undefined): string {
+  if (!rev) {
+    return "O simulado foi salvo, mas a Revisão não foi atualizada. Abra a página Revisão e clique em importar dos simulados.";
+  }
+  const partes = [
+    rev.criados > 0 ? `${rev.criados} ${rev.criados === 1 ? "novo" : "novos"}` : "",
+    rev.atualizados > 0 ? `${rev.atualizados} ${rev.atualizados === 1 ? "atualizado" : "atualizados"}` : "",
+    rev.reabertos > 0 ? `${rev.reabertos} ${rev.reabertos === 1 ? "reaberto" : "reabertos"}` : "",
+    rev.removidos > 0 ? `${rev.removidos} ${rev.removidos === 1 ? "removido" : "removidos"}` : "",
+  ].filter(Boolean);
+  return partes.length ? `Revisão atualizada: ${partes.join(", ")}.` : "A Revisão já estava em dia.";
+}
+
+export default function RegistrarSimuladoForm({
+  onSalvo,
+}: {
+  onSalvo: (revisao: ResultadoRevisao | null) => void;
+}) {
   const [provas, setProvas] = useState<Prova[] | null>(null);
   const [provaId, setProvaId] = useState("");
   const [data, setData] = useState(() => new Date().toISOString().slice(0, 10));
@@ -134,7 +161,8 @@ export default function RegistrarSimuladoForm({ onSalvo }: { onSalvo: () => void
       return;
     }
 
-    onSalvo();
+    const dados = await res.json().catch(() => null);
+    onSalvo(dados?.revisao ?? null);
   }
 
   if (!provas) return <p className="text-sm text-ink/60">Carregando...</p>;

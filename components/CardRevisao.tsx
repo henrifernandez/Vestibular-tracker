@@ -20,7 +20,7 @@ export default function CardRevisao() {
       className="bg-surface rounded-xl border border-ink/10 p-4 hover:border-accent transition block"
     >
       <div className="font-mono text-[11px] uppercase tracking-wide text-ink/45">Conteúdos a revisar</div>
-      <div className="font-display text-2xl font-semibold mt-1">{resumo ? resumo.pendentes : "—"}</div>
+      <div className="font-display text-2xl font-semibold mt-1">{resumo ? resumo.pendentes : "..."}</div>
       <div className="text-xs text-ink/50 mt-1">
         {!resumo
           ? "carregando..."

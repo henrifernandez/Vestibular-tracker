@@ -7,6 +7,7 @@ type Conteudo = {
   prioridade: "ALTA" | "MEDIA" | "BAIXA";
   status: "PENDENTE" | "REVISADO";
   vezesErrado: number;
+  simulados: number;
   origem: "MANUAL" | "SIMULADO";
   observacao: string | null;
   revisadoEm: string | null;
@@ -254,7 +255,7 @@ export default function Revisao() {
         <div>
           <h1 className="font-display text-2xl font-semibold">Revisão</h1>
           <p className="text-xs text-ink/50 mt-1">
-            Entram os assuntos que você errou em 2 ou mais simulados, mais os que adicionar à mão.
+            Entram todos os assuntos que você errou nos simulados, mais os que adicionar à mão. Os que se repetem ficam com prioridade alta.
           </p>
         </div>
         <div className="flex items-center gap-4">
@@ -275,18 +276,18 @@ export default function Revisao() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="bg-surface rounded-xl border border-ink/10 p-4">
           <div className="font-mono text-[11px] uppercase tracking-wide text-ink/45">Pendentes</div>
-          <div className="font-display text-2xl font-semibold mt-1">{resumo ? resumo.pendentes : "—"}</div>
+          <div className="font-display text-2xl font-semibold mt-1">{resumo ? resumo.pendentes : "..."}</div>
           <div className="text-xs text-ink/50 mt-1">a revisar</div>
         </div>
         <div className="bg-surface rounded-xl border border-ink/10 p-4">
           <div className="font-mono text-[11px] uppercase tracking-wide text-ink/45">Revisados</div>
-          <div className="font-display text-2xl font-semibold mt-1">{resumo ? resumo.revisados : "—"}</div>
+          <div className="font-display text-2xl font-semibold mt-1">{resumo ? resumo.revisados : "..."}</div>
           <div className="text-xs text-ink/50 mt-1">no total</div>
         </div>
         <div className="bg-surface rounded-xl border border-ink/10 p-4">
           <div className="font-mono text-[11px] uppercase tracking-wide text-ink/45">% revisado</div>
           <div className="font-display text-2xl font-semibold mt-1">
-            {resumo?.pctRevisado != null ? `${resumo.pctRevisado}%` : "—"}
+            {resumo ? `${resumo.pctRevisado ?? 0}%` : "..."}
           </div>
           <div className="text-xs text-ink/50 mt-1">
             {resumo && resumo.total > 0 ? `${resumo.revisados} de ${resumo.total}` : "sem conteúdos ainda"}
@@ -295,7 +296,7 @@ export default function Revisao() {
         <div className="bg-surface rounded-xl border border-ink/10 p-4">
           <div className="font-mono text-[11px] uppercase tracking-wide text-ink/45">Revisados (7d)</div>
           <div className="font-display text-2xl font-semibold mt-1">
-            {resumo ? resumo.revisadosUltimos7Dias : "—"}
+            {resumo ? resumo.revisadosUltimos7Dias : "..."}
           </div>
           <div className="text-xs text-ink/50 mt-1">últimos 7 dias</div>
         </div>
@@ -484,7 +485,7 @@ export default function Revisao() {
         <p className="text-sm text-ink/50">
           {temFiltro
             ? "Nenhum conteúdo com esses filtros."
-            : "Nenhum conteúdo para revisar ainda. A importação só traz assuntos que apareceram em 2 ou mais simulados; você também pode usar “+ adicionar conteúdo”."}
+            : "Nenhum conteúdo para revisar ainda. Ao importar ou registrar um simulado, os assuntos errados entram aqui sozinhos. Você também pode usar “importar dos simulados” ou “+ adicionar conteúdo”."}
         </p>
       )}
 
@@ -570,7 +571,8 @@ export default function Revisao() {
                 </div>
                 <p className="text-xs text-ink/50 mt-1.5">
                   {c.vezesErrado > 0
-                    ? `errou ${c.vezesErrado} ${c.vezesErrado === 1 ? "vez" : "vezes"}`
+                    ? `errou ${c.vezesErrado} ${c.vezesErrado === 1 ? "vez" : "vezes"}` +
+                      (c.simulados > 0 ? ` em ${c.simulados} ${c.simulados === 1 ? "simulado" : "simulados"}` : "")
                     : "sem erros registrados"}{" "}
                   · {c.origem === "SIMULADO" ? "veio dos simulados" : "cadastro manual"}
                   {c.ultimaRevisao && (

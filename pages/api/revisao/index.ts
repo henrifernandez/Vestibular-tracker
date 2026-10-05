@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import {
   PRIORIDADES,
   STATUS,
+  carregarGrupos,
   classificarDisciplina,
   normalizarAssunto,
   ordenarParaRevisao,
@@ -18,6 +19,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const disciplina = texto(req.query.disciplina);
     const prioridade = texto(req.query.prioridade);
 
+    // quantos simulados diferentes tiveram cada assunto (calculado na hora, sem coluna no banco)
+    const grupos = await carregarGrupos();
+
     const itens = await prisma.conteudoRevisao.findMany({
       where: {
         ...(status ? { status } : {}),
@@ -32,6 +36,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const lista = itens.map(({ logs, _count, ...c }) => ({
       ...c,
+      simulados: grupos.get(c.assuntoNorm)?.simulados ?? 0,
       ultimaRevisao: logs[0]?.revisadoEm ?? null,
       ultimaConfianca: logs[0]?.confianca ?? null,
       totalRevisoes: _count.logs,

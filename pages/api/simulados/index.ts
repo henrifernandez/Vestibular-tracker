@@ -6,6 +6,7 @@ import {
   registrarSimuladoEnemComFanOut,
   type ResultadoInput,
 } from "@/lib/enem-fanout";
+import { sincronizarSeguro } from "@/lib/revisao";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === "GET") {
@@ -47,7 +48,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         observacao,
         resultados,
       });
-      return res.status(201).json({ fanOut: true, simulados: simuladosCriados });
+      const revisao = await sincronizarSeguro();
+      return res.status(201).json({ fanOut: true, simulados: simuladosCriados, revisao });
     }
 
     const simulado = await prisma.simulado.create({
@@ -63,7 +65,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       },
     });
 
-    return res.status(201).json(simulado);
+    const revisao = await sincronizarSeguro();
+    return res.status(201).json({ ...simulado, revisao });
   }
 
   res.setHeader("Allow", ["GET", "POST"]);

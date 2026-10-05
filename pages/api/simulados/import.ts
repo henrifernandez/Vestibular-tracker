@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "@/lib/prisma";
 import { parseCSV } from "@/lib/csv";
 import { SLUG_ENEM_REGISTRO_UNICO, registrarSimuladoEnemComFanOut } from "@/lib/enem-fanout";
+import { sincronizarSeguro } from "@/lib/revisao";
 
 export const config = {
   api: {
@@ -185,5 +186,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     criados++;
   }
 
-  res.status(200).json({ simuladosCriados: criados, erros });
+  // Leva os conteúdos errados para a seção Revisão (null se a sincronização falhar).
+  const revisao = criados > 0 ? await sincronizarSeguro() : null;
+
+  res.status(200).json({ simuladosCriados: criados, erros, revisao, revisaoFalhou: criados > 0 && revisao === null });
 }

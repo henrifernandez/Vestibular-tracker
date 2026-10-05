@@ -13,8 +13,11 @@ export type StatusRevisao = (typeof STATUS)[number];
 
 export const PESO_PRIORIDADE: Record<string, number> = { ALTA: 0, MEDIA: 1, BAIXA: 2 };
 
-// Assunto errado nesta quantidade de vezes (somando todos os simulados) vira prioridade ALTA.
-export const MIN_ERROS_PRIORIDADE_ALTA = 2;
+// Um assunto entra na Revisão sozinho quando foi errado esta quantidade de vezes, seja em
+// simulados diferentes ou várias vezes no mesmo. Os errados uma vez só ficam de fora, a
+// menos que o usuário peça para incluir (ver listarCandidatos). Quem entra sozinho tem
+// prioridade ALTA, porque é um erro que se repete.
+export const MIN_ERROS_REVISAO = 2;
 
 // Marca gravada por registrarSimuladoEnemComFanOut (lib/enem-fanout.ts) nas cópias
 // do registro único de ENEM.
@@ -259,10 +262,10 @@ export type PlanoSincronizacao = {
   remover: { id: string; assunto: string }[];
 };
 
-// Calcula o que a sincronização faria, sem gravar nada. Todo assunto errado em algum
-// simulado entra na Revisão: MEDIA se errou uma vez, ALTA se errou 2 ou mais vezes.
-// O que o usuário já mexeu (revisado, comentado, prioridade ajustada, disciplina definida)
-// é preservado.
+// Calcula o que a sincronização faria, sem gravar nada. Entram na Revisão os assuntos
+// errados MIN_ERROS_REVISAO vezes ou mais, com prioridade ALTA. Itens que o usuário
+// cadastrou ou pediu para incluir continuam atualizados, mesmo com menos erros. O que ele
+// já mexeu (revisado, comentado, prioridade ajustada, disciplina definida) é preservado.
 export async function planejarSincronizacao(): Promise<PlanoSincronizacao> {
   const grupos = await carregarGrupos();
 
@@ -276,14 +279,16 @@ export async function planejarSincronizacao(): Promise<PlanoSincronizacao> {
     else porNorm.set(e.assuntoNorm, [e]);
   }
 
-  // Itens que a própria importação criou, ninguém mexeu e cujo assunto sumiu dos simulados
-  // (simulado apagado) saem da lista. Prioridade igual à que a importação daria conta como
-  // "ninguém mexeu".
+  // Itens que a própria importação criou, ninguém mexeu e que já não têm erros suficientes
+  // (simulado apagado ou regra mais exigente) saem da lista. Prioridade igual à que a
+  // importação daria conta como "ninguém mexeu".
   const remover: PlanoSincronizacao["remover"] = [];
   const removiveis = new Set<string>();
   for (const e of existentes) {
-    if (e.origem !== "SIMULADO" || grupos.has(e.assuntoNorm)) continue;
-    const prioridadeEsperada = e.vezesErrado >= MIN_ERROS_PRIORIDADE_ALTA ? "ALTA" : "MEDIA";
+    if (e.origem !== "SIMULADO") continue;
+    const g = grupos.get(e.assuntoNorm);
+    if (g && g.vezes >= MIN_ERROS_REVISAO) continue;
+    const prioridadeEsperada = e.vezesErrado >= MIN_ERROS_REVISAO ? "ALTA" : "MEDIA";
     const intocado =
       e.status === "PENDENTE" && e._count.logs === 0 && !e.observacao && e.prioridade === prioridadeEsperada;
     if (intocado) {
@@ -300,6 +305,7 @@ export async function planejarSincronizacao(): Promise<PlanoSincronizacao> {
     const lista = (porNorm.get(norm) ?? []).filter((e) => !removiveis.has(e.id));
 
     if (lista.length === 0) {
+      if (g.vezes < MIN_ERROS_REVISAO) continue;
       novos.push({
         assunto: g.assunto,
         assuntoNorm: norm,
@@ -307,7 +313,7 @@ export async function planejarSincronizacao(): Promise<PlanoSincronizacao> {
         areaId: g.areaId,
         origem: "SIMULADO",
         vezesErrado: g.vezes,
-        prioridade: g.vezes >= MIN_ERROS_PRIORIDADE_ALTA ? "ALTA" : "MEDIA",
+        prioridade: "ALTA",
       });
       continue;
     }
@@ -329,8 +335,8 @@ export async function planejarSincronizacao(): Promise<PlanoSincronizacao> {
     // Sobe para ALTA só no momento em que o assunto passa a se repetir e a prioridade ainda
     // é a padrão. Assim, uma prioridade que o usuário escolheu depois não é desfeita.
     if (
-      g.vezes >= MIN_ERROS_PRIORIDADE_ALTA &&
-      atual.vezesErrado < MIN_ERROS_PRIORIDADE_ALTA &&
+      g.vezes >= MIN_ERROS_REVISAO &&
+      atual.vezesErrado < MIN_ERROS_REVISAO &&
       atual.prioridade === "MEDIA"
     ) {
       data.prioridade = "ALTA";
@@ -346,6 +352,25 @@ export async function planejarSincronizacao(): Promise<PlanoSincronizacao> {
   }
 
   return { grupos, novos, atualizacoes, remover };
+}
+
+export type Candidato = { assunto: string; disciplina: string; vezes: number; simulados: number };
+
+// Assuntos errados menos de MIN_ERROS_REVISAO vezes que ainda não estão na Revisão. Não
+// entram sozinhos: a tela oferece um botão para o usuário incluir os que quiser.
+export async function listarCandidatos(): Promise<Candidato[]> {
+  const grupos = await carregarGrupos();
+  const existentes = await prisma.conteudoRevisao.findMany({ select: { assuntoNorm: true } });
+  const jaTem = new Set(existentes.map((e) => e.assuntoNorm));
+  return [...grupos.entries()]
+    .filter(([norm, g]) => g.vezes < MIN_ERROS_REVISAO && !jaTem.has(norm))
+    .map(([, g]) => ({
+      assunto: g.assunto,
+      disciplina: classificarDisciplina(g.assunto, g.areaNome),
+      vezes: g.vezes,
+      simulados: g.simulados,
+    }))
+    .sort((a, b) => a.disciplina.localeCompare(b.disciplina, "pt-BR") || a.assunto.localeCompare(b.assunto, "pt-BR"));
 }
 
 // Aplica o plano no banco. Idempotente: rodar de novo com os mesmos dados não muda nada.

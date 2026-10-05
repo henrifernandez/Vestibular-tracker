@@ -54,8 +54,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     const assuntoNorm = normalizarAssunto(assunto);
+    // Se o assunto já foi errado em simulados, herda a contagem de erros e a área.
+    const grupo = (await carregarGrupos()).get(assuntoNorm);
     const disciplinaInformada = texto(req.body?.disciplina);
-    const disciplina = disciplinaInformada ?? classificarDisciplina(assunto);
+    const disciplina = disciplinaInformada ?? classificarDisciplina(assunto, grupo?.areaNome);
 
     // Com disciplina escolhida, duplicata é o par (assunto, disciplina); sem ela,
     // o mesmo assunto em qualquer disciplina já conta.
@@ -78,8 +80,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         prioridade,
         status: STATUS[0],
         origem: "MANUAL",
+        vezesErrado: grupo?.vezes ?? 0,
         observacao: texto(req.body?.observacao),
-        areaId: texto(req.body?.areaId),
+        areaId: texto(req.body?.areaId) ?? grupo?.areaId,
       },
     });
     return res.status(201).json({ item });

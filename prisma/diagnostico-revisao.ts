@@ -13,7 +13,8 @@ import { prisma } from "../lib/prisma";
 import {
   agruparErros,
   classificarDisciplina,
-  MIN_ERROS_PRIORIDADE_ALTA,
+  MIN_ERROS_REVISAO,
+  listarCandidatos,
   planejarSincronizacao,
   type GrupoAssunto,
 } from "../lib/revisao";
@@ -30,7 +31,7 @@ function hostDoBanco(): string {
 }
 
 function linhaGrupo(g: GrupoAssunto) {
-  const prioridade = g.vezes >= MIN_ERROS_PRIORIDADE_ALTA ? "ALTA " : "MEDIA";
+  const prioridade = g.vezes >= MIN_ERROS_REVISAO ? "ALTA " : "MEDIA";
   const disc = classificarDisciplina(g.assunto, g.areaNome);
   return `   ${prioridade} | ${String(g.vezes).padStart(2)}x em ${g.simulados} simulado(s) | ${disc.padEnd(13)} | ${g.assunto}`;
 }
@@ -63,9 +64,14 @@ async function diagnosticoDoSite(base: string) {
   const grupos = agruparErros(resultados);
   const existentes = new Set(revisao.map((r) => r.assuntoNorm));
 
-  console.log(`\n== Assuntos que a sincronização traria (${grupos.size})`);
   const { normalizarAssunto } = await import("../lib/revisao");
-  for (const g of grupos.values()) console.log(linhaGrupo(g) + (existentes.has(normalizarAssunto(g.assunto)) ? "  (ja existe)" : ""));
+  const entram = [...grupos.values()].filter((g) => g.vezes >= MIN_ERROS_REVISAO);
+  const candidatos = [...grupos.values()].filter((g) => g.vezes < MIN_ERROS_REVISAO);
+  console.log(`\n== Assuntos distintos nos simulados: ${grupos.size}`);
+  console.log(`== Entram sozinhos na Revisão (errados ${MIN_ERROS_REVISAO} vezes ou mais): ${entram.length}`);
+  for (const g of entram) console.log(linhaGrupo(g) + (existentes.has(normalizarAssunto(g.assunto)) ? "  (já existe)" : ""));
+  console.log(`== Candidatos a incluir sob pedido (errados menos vezes): ${candidatos.length}`);
+  for (const g of candidatos) console.log(linhaGrupo(g) + (existentes.has(normalizarAssunto(g.assunto)) ? "  (já está na Revisão, sairia na próxima sincronização se ninguém mexeu)" : ""));
   console.log("\n== Itens hoje na Revisão do site");
   for (const r of revisao) console.log(`   ${r.origem.padEnd(8)} ${r.status.padEnd(9)} ${r.prioridade.padEnd(5)} ${r.disciplina.padEnd(10)} | ${String(r.assunto).slice(0, 70)}`);
 }
@@ -101,6 +107,8 @@ async function diagnosticoDoEnv() {
   console.log(`\n== Simulação da sincronização (nada é gravado)`);
   console.log("assuntos distintos nos simulados:", plano.grupos.size);
   console.log("criaria:", plano.novos.length, "| atualizaria:", plano.atualizacoes.length, "| removeria:", plano.remover.length);
+  console.log(`(entram sozinhos so os assuntos errados ${MIN_ERROS_REVISAO} vezes ou mais)`);
+  console.log("candidatos a incluir sob pedido (errados menos vezes):", (await listarCandidatos()).length);
   for (const n of plano.novos) {
     const g = plano.grupos.get(n.assuntoNorm)!;
     console.log("  criar     " + linhaGrupo(g).trim());

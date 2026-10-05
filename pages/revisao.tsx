@@ -25,6 +25,8 @@ type Resumo = {
   disciplinas: string[];
 };
 
+type Candidato = { assunto: string; disciplina: string; vezes: number; simulados: number };
+
 type ResultadoSync = { criados: number; atualizados: number; reabertos: number; removidos: number };
 
 const PRIORIDADE_LABEL = { ALTA: "Alta", MEDIA: "Média", BAIXA: "Baixa" } as const;
@@ -130,6 +132,10 @@ export default function Revisao() {
   const [importando, setImportando] = useState(false);
   const [resultadoSync, setResultadoSync] = useState<ResultadoSync | null>(null);
 
+  const [candidatos, setCandidatos] = useState<Candidato[]>([]);
+  const [mostrarCandidatos, setMostrarCandidatos] = useState(false);
+  const [adicionandoCandidato, setAdicionandoCandidato] = useState<string | null>(null);
+
   const [confiancaAbertaId, setConfiancaAbertaId] = useState<string | null>(null);
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [edicao, setEdicao] = useState({ assunto: "", disciplina: "", prioridade: "MEDIA", observacao: "" });
@@ -141,12 +147,14 @@ export default function Revisao() {
     if (filtroDisciplina) params.set("disciplina", filtroDisciplina);
     if (filtroPrioridade) params.set("prioridade", filtroPrioridade);
     try {
-      const [lista, res] = await Promise.all([
+      const [lista, res, cands] = await Promise.all([
         fetch(`/api/revisao?${params}`).then((r) => r.json()),
         fetch("/api/revisao/resumo").then((r) => r.json()),
+        fetch("/api/revisao/candidatos").then((r) => r.json()),
       ]);
       setItens(lista);
       setResumo(res);
+      setCandidatos(Array.isArray(cands) ? cands : []);
       setErro(null);
     } catch {
       setErro("Não foi possível carregar os conteúdos.");
@@ -182,6 +190,21 @@ export default function Revisao() {
       setAvisoNovo("Erro de rede ao chamar o servidor.");
     } finally {
       setSalvandoNovo(false);
+    }
+  }
+
+  async function adicionarCandidato(c: Candidato) {
+    setAdicionandoCandidato(c.assunto);
+    try {
+      const res = await fetch("/api/revisao", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ assunto: c.assunto, disciplina: c.disciplina, prioridade: "MEDIA" }),
+      });
+      if (!res.ok) alert("Não foi possível adicionar. Tente novamente.");
+      else await carregar();
+    } finally {
+      setAdicionandoCandidato(null);
     }
   }
 
@@ -255,7 +278,7 @@ export default function Revisao() {
         <div>
           <h1 className="font-display text-2xl font-semibold">Revisão</h1>
           <p className="text-xs text-ink/50 mt-1">
-            Entram todos os assuntos que você errou nos simulados, mais os que adicionar à mão. Os que se repetem ficam com prioridade alta.
+            Entram sozinhos os assuntos que você errou 2 ou mais vezes, em simulados diferentes ou no mesmo, com prioridade alta. Os errados uma vez só você inclui quando quiser.
           </p>
         </div>
         <div className="flex items-center gap-4">
@@ -485,7 +508,7 @@ export default function Revisao() {
         <p className="text-sm text-ink/50">
           {temFiltro
             ? "Nenhum conteúdo com esses filtros."
-            : "Nenhum conteúdo para revisar ainda. Ao importar ou registrar um simulado, os assuntos errados entram aqui sozinhos. Você também pode usar “importar dos simulados” ou “+ adicionar conteúdo”."}
+            : "Nenhum conteúdo para revisar ainda. Os assuntos errados 2 ou mais vezes entram aqui sozinhos ao importar ou registrar um simulado. Você também pode usar “importar dos simulados” ou “+ adicionar conteúdo”."}
         </p>
       )}
 
@@ -641,6 +664,58 @@ export default function Revisao() {
           );
         })}
       </div>
+
+      {candidatos.length > 0 && (
+        <div className="rounded-xl border border-ink/10 bg-surface">
+          <button
+            onClick={() => setMostrarCandidatos((v) => !v)}
+            aria-expanded={mostrarCandidatos}
+            className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
+          >
+            <span>
+              <span className="font-display text-[15px] font-semibold">Errados uma vez só</span>
+              <span className="ml-2 font-mono text-xs text-ink/40">{candidatos.length}</span>
+              <span className="mt-0.5 block text-xs text-ink/50">
+                Não entram sozinhos. Inclua na revisão os que você quiser.
+              </span>
+            </span>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className={"shrink-0 text-ink/40 transition-transform " + (mostrarCandidatos ? "rotate-180" : "")}
+            >
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </button>
+          {mostrarCandidatos && (
+            <ul className="divide-y divide-ink/[0.06] border-t border-ink/10">
+              {candidatos.map((c) => (
+                <li key={c.assunto} className="flex items-center justify-between gap-3 px-4 py-2.5">
+                  <div className="flex min-w-0 flex-wrap items-center gap-2">
+                    <span className="text-sm">{c.assunto}</span>
+                    <span className="font-mono text-[10px] uppercase tracking-wide bg-accent/10 text-brand rounded-full px-2 py-0.5">
+                      {c.disciplina}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => adicionarCandidato(c)}
+                    disabled={adicionandoCandidato === c.assunto}
+                    className="shrink-0 rounded-md border border-ink/15 px-3 py-1 text-sm hover:border-accent hover:text-brand disabled:opacity-50"
+                  >
+                    {adicionandoCandidato === c.assunto ? "Adicionando..." : "Adicionar"}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
     </div>
   );
 }
